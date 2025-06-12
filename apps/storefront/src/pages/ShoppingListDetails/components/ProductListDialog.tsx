@@ -36,8 +36,7 @@ function ProductTableAction(props: ProductTableActionProps) {
   } = props;
 
   const {
-    state: { isLoading = false, addButtonDisabled = false },
-    dispatch,
+    state: { isLoading = false }
   } = useContext(ShoppingListDetailsContext);
 
   const [isMobile] = useMobile();
@@ -46,21 +45,17 @@ function ProductTableAction(props: ProductTableActionProps) {
 
   let price = Number(base_price);
 
+  let addButtonDisabled = false;
   let buttonText = addButtonText;
   let onAddDelegate = onAddToListClick;
   if(isNaN(price) || price <= 0){
-    buttonText = addQuoteButtonText;
     if(type === 'quote'){
+      buttonText = addQuoteButtonText;
       onAddDelegate = onAddToQuoteClick;
     }
     else{
       onAddDelegate = (_) => {};
-      dispatch({
-        type: 'setAddButtonDisabled',
-        payload: {
-          addButtonDisabled: true,
-        }
-      });
+      addButtonDisabled = true;
     }
   }
 
