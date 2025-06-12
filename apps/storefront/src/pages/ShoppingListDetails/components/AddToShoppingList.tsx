@@ -107,11 +107,15 @@ export default function AddToShoppingList(props: AddToListProps) {
 
     products.forEach((item: CustomFieldItems) => {
       const { products: currentProduct, qty } = item;
-      const { option, purchasingDisabled, variantSku, variantId, productId, modifiers } =
+      const { option, purchasingDisabled, variantSku, variantId, calculatedPrice, productId, modifiers } =
         currentProduct;
 
       const defaultModifiers = getAllModifierDefaultValue(modifiers);
       if (purchasingDisabled && pageType !== 'shoppingList') {
+        notPurchaseSku.push(variantSku);
+        return;
+      }
+      if (calculatedPrice === 0) {
         notPurchaseSku.push(variantSku);
         return;
       }

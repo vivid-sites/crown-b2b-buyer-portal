@@ -3,6 +3,7 @@ import { createContext, Dispatch, ReactNode, useMemo, useReducer } from 'react';
 export interface ShoppingListDetailsState {
   id?: number;
   isLoading?: boolean;
+  addButtonDisabled?: boolean;
 }
 interface ShoppingListDetailsAction {
   type: string;
@@ -20,6 +21,7 @@ interface ShoppingListDetailsProviderProps {
 const initState = {
   id: 0,
   isLoading: false,
+  addButtonDisabled: false,
 };
 
 export const ShoppingListDetailsContext = createContext<ShoppingListDetailsContextType>({
@@ -43,6 +45,11 @@ const reducer = (state: ShoppingListDetailsState, action: ShoppingListDetailsAct
       return {
         ...state,
         isLoading: action.payload.isLoading,
+      };
+    case 'setAddButtonDisabled':
+      return {
+        ...state,
+        addButtonDisabled: action.payload.addButtonDisabled,
       };
     default:
       return state;

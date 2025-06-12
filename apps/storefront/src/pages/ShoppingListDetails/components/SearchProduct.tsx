@@ -9,7 +9,8 @@ import { useBlockPendingAccountViewPrice } from '@/hooks';
 import { searchB2BProducts, searchBcProducts } from '@/shared/service/b2b';
 import { useAppSelector } from '@/store';
 import { snackbar } from '@/utils';
-import { calculateProductListPrice } from '@/utils/b3Product/b3Product';
+import { addQuoteDraftProducts, calculateProductListPrice, getNewQuoteProduct } from '@/utils/b3Product/b3Product';
+
 import { conversionProductsList } from '@/utils/b3Product/shared/config';
 
 import { ShoppingListProductItem } from '../../../types';
@@ -22,6 +23,7 @@ interface SearchProductProps {
   addToList: (products: CustomFieldItems[]) => void;
   searchDialogTitle?: string;
   addButtonText?: string;
+  addQuoteButtonText?: string;
   isB2BUser: boolean;
   type?: string;
 }
@@ -31,6 +33,7 @@ export default function SearchProduct({
   addToList,
   searchDialogTitle,
   addButtonText,
+  addQuoteButtonText,
   isB2BUser,
   type,
 }: SearchProductProps) {
@@ -130,8 +133,35 @@ export default function SearchProduct({
     }
   };
 
+  const addToQuote = (products: CustomFieldItems[]) => {
+    addQuoteDraftProducts(products);
+  };
+
+  const handleAddToQuoteClick = async (products: CustomFieldItems[]) => {
+    try {
+      setIsLoading(true);
+      await calculateProductListPrice(products);
+
+      const newProducts = getNewQuoteProduct(productList);
+
+      addToQuote(newProducts);
+  
+      snackbar.success(b3Lang('quoteDraft.notification.productPlural'), {
+        isClose: true,
+      });
+  
+      updateList();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleProductListAddToList = async (products: CustomFieldItems[]) => {
     await handleAddToListClick(products);
+  };
+
+  const handleProductListAddToQuote = async (products: CustomFieldItems[]) => {
+    await handleAddToQuoteClick(products);
   };
 
   const handleChangeOptionsClick = (productId: number) => {
@@ -224,8 +254,10 @@ export default function SearchProduct({
         onProductQuantityChange={handleProductQuantityChange}
         onChooseOptionsClick={handleChangeOptionsClick}
         onAddToListClick={handleProductListAddToList}
+        onAddToQuoteClick={handleProductListAddToQuote}
         searchDialogTitle={searchDialogTitle}
         addButtonText={addButtonText}
+        addQuoteButtonText={addQuoteButtonText}
       />
 
       <ChooseOptionsDialog

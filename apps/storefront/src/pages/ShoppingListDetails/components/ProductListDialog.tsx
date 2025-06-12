@@ -16,26 +16,53 @@ import { ShoppingListDetailsContext } from '../context/ShoppingListDetailsContex
 
 interface ProductTableActionProps {
   product: ShoppingListProductItem;
+  type?: string;
   onAddToListClick: (id: number) => void;
+  onAddToQuoteClick: (id: number) => void;
   onChooseOptionsClick: (id: number) => void;
   addButtonText: string;
+  addQuoteButtonText: string;
 }
 
 function ProductTableAction(props: ProductTableActionProps) {
   const {
-    product: { id, allOptions: productOptions },
+    product: { id, allOptions: productOptions, base_price },
+    type,
     onAddToListClick,
+    onAddToQuoteClick,
     onChooseOptionsClick,
     addButtonText,
+    addQuoteButtonText
   } = props;
 
   const {
-    state: { isLoading = false },
+    state: { isLoading = false, addButtonDisabled = false },
+    dispatch,
   } = useContext(ShoppingListDetailsContext);
 
   const [isMobile] = useMobile();
 
   const b3Lang = useB3Lang();
+
+  let price = Number(base_price);
+
+  let buttonText = addButtonText;
+  let onAddDelegate = onAddToListClick;
+  if(isNaN(price) || price <= 0){
+    buttonText = addQuoteButtonText;
+    if(type === 'quote'){
+      onAddDelegate = onAddToQuoteClick;
+    }
+    else{
+      onAddDelegate = (_) => {};
+      dispatch({
+        type: 'setAddButtonDisabled',
+        payload: {
+          addButtonDisabled: true,
+        }
+      });
+    }
+  }
 
   return productOptions && productOptions.length > 0 ? (
     <CustomButton
@@ -43,7 +70,7 @@ function ProductTableAction(props: ProductTableActionProps) {
       onClick={() => {
         onChooseOptionsClick(id);
       }}
-      disabled={isLoading}
+      disabled={isLoading || addButtonDisabled}
       fullWidth={isMobile}
     >
       {b3Lang('global.searchProduct.chooseOptionsButton')}
@@ -52,12 +79,12 @@ function ProductTableAction(props: ProductTableActionProps) {
     <CustomButton
       variant="outlined"
       onClick={() => {
-        onAddToListClick(id);
+        onAddDelegate(id);
       }}
-      disabled={isLoading}
+      disabled={isLoading || addButtonDisabled}
       fullWidth={isMobile}
     >
-      {addButtonText}
+      {buttonText}
     </CustomButton>
   );
 }
@@ -71,10 +98,12 @@ interface ProductListDialogProps {
   onSearch: () => void;
   onProductQuantityChange: (id: number, newQuantity: number) => void;
   onAddToListClick: (products: CustomFieldItems[]) => void;
+  onAddToQuoteClick: (products: CustomFieldItems[]) => void;
   onChooseOptionsClick: (id: number) => void;
   isLoading: boolean;
   searchDialogTitle?: string;
   addButtonText?: string;
+  addQuoteButtonText?: string;
   type?: string;
 }
 
@@ -91,11 +120,13 @@ export default function ProductListDialog(props: ProductListDialogProps) {
     onSearch,
     onProductQuantityChange,
     onAddToListClick,
+    onAddToQuoteClick,
     onChooseOptionsClick,
     isLoading,
     type,
     searchDialogTitle = b3Lang('shoppingLists.title'),
     addButtonText = b3Lang('shoppingLists.addButtonText'),
+    addQuoteButtonText = b3Lang('shoppingLists.addQuoteButtonText'),
   } = props;
 
   const isEnableProduct = useAppSelector(
@@ -142,6 +173,27 @@ export default function ProductListDialog(props: ProductListDialogProps) {
       }
 
       onAddToListClick([
+        {
+          ...product,
+          newSelectOptionList: [],
+          quantity: parseInt(product.quantity.toString(), 10) || 1,
+          variantId,
+        },
+      ]);
+    }
+  };
+
+  const handleAddToQuote = (id: number) => {
+    const product = productList.find((product) => product.id === id);
+
+    if (product && validateQuantityNumber(product || {})) {
+      let variantId: number | string = product.variantId || 0;
+
+      if (!product.variantId && product.variants?.[0]) {
+        variantId = product.variants[0].variant_id;
+      }
+
+      onAddToQuoteClick([
         {
           ...product,
           newSelectOptionList: [],
@@ -205,9 +257,12 @@ export default function ProductListDialog(props: ProductListDialogProps) {
               renderAction={(product) => (
                 <ProductTableAction
                   product={product}
+                  type={type}
                   onAddToListClick={handleAddToList}
+                  onAddToQuoteClick={handleAddToQuote}
                   onChooseOptionsClick={onChooseOptionsClick}
                   addButtonText={addButtonText}
+                  addQuoteButtonText={addQuoteButtonText}
                 />
               )}
               actionWidth="180px"

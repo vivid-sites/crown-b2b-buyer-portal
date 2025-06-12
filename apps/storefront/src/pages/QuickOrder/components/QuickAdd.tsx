@@ -20,6 +20,7 @@ interface AddToListContentProps {
   quickAddToList: (products: CustomFieldItems[]) => CustomFieldItems;
   level?: number;
   buttonText?: string;
+  type?: string;
 }
 
 export default function QuickAdd(props: AddToListContentProps) {
@@ -28,7 +29,7 @@ export default function QuickAdd(props: AddToListContentProps) {
     updateList = () => {},
     quickAddToList,
     level = 3,
-    buttonText = b3Lang('purchasedProducts.quickAdd.addProductToList'),
+    buttonText = b3Lang('purchasedProducts.quickAdd.addProductToList')
   } = props;
 
   const isB2BUser = useAppSelector(isB2BUserSelector);
@@ -161,6 +162,7 @@ export default function QuickAdd(props: AddToListContentProps) {
       const {
         productId,
         variantId,
+        calculatedPrice,
         option: options,
         purchasingDisabled = '1',
         stock,
@@ -181,7 +183,7 @@ export default function QuickAdd(props: AddToListContentProps) {
 
       const allQuantity = (skuValue[sku] as number) + num || 0;
 
-      if (purchasingDisabled === '1') {
+      if (purchasingDisabled === '1' || calculatedPrice === 0) {
         notPurchaseSku.push(sku);
         return;
       }

@@ -139,6 +139,7 @@ export default function QuickOrderPad(props: QuickOrderPadProps) {
         option,
         isStock,
         stock,
+        calculatedPrice,
         purchasingDisabled,
         maxQuantity,
         minQuantity,
@@ -147,7 +148,7 @@ export default function QuickOrderPad(props: QuickOrderPadProps) {
         productId,
         modifiers,
       } = currentProduct;
-      if (purchasingDisabled === '1' || purchasingDisabled) {
+      if (purchasingDisabled === '1' || purchasingDisabled || calculatedPrice === 0) {
         notPurchaseSku.push(variantSku);
         return;
       }

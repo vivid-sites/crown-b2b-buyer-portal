@@ -155,6 +155,7 @@ export default function QuickAdd(props: AddToListContentProps) {
         const {
           productId,
           variantId,
+          calculatedPrice,
           option: options,
           purchasingDisabled = '1',
           modifiers,
@@ -165,6 +166,11 @@ export default function QuickAdd(props: AddToListContentProps) {
         const quantity = (skuValue[sku] as number) || 0;
 
         if (purchasingDisabled === '1' && type !== 'shoppingList') {
+          notPurchaseSku.push(sku);
+          return;
+        }
+
+        if (calculatedPrice === 0 && type !== 'quote') {
           notPurchaseSku.push(sku);
           return;
         }
