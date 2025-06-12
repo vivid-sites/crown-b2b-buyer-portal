@@ -13,8 +13,6 @@ import {
   within,
 } from 'tests/test-utils';
 
-import B3LayoutTip from '@/components/layout/B3LayoutTip';
-import { DynamicallyVariableProvider } from '@/shared/dynamicallyVariable';
 import { CompanyRolesResponse } from '@/shared/service/b2b/graphql/roleAndPermissions';
 import {
   UserEmailCheckResponse,
@@ -486,11 +484,11 @@ describe.each([
           buildUsersResponseWith({ data: { users: { edges: [troyMcClureSummary] } } }),
         );
 
-      const updateUserQuerySpy = vi.fn();
+      const updateUserVariablesSpy = vi.fn();
 
       server.use(
-        graphql.mutation('UpdateUser', ({ query }) => {
-          updateUserQuerySpy(query);
+        graphql.mutation('UpdateUser', ({ variables }) => {
+          updateUserVariablesSpy(variables);
 
           return HttpResponse.json({ data: { userUpdate: { user: { id: '667668', bcId: 12 } } } });
         }),
@@ -503,15 +501,7 @@ describe.each([
         ),
       );
 
-      renderWithProviders(
-        // This can be rolled into "renderWithProviders" once
-        // we fix ShoppingListDetails/index.test.tsx
-        <DynamicallyVariableProvider>
-          <B3LayoutTip />
-          <UserManagement />
-        </DynamicallyVariableProvider>,
-        { preloadedState },
-      );
+      renderWithProviders(<UserManagement />, { preloadedState });
 
       expect(await screen.findByRole('heading', { name: 'Troy McClure' })).toBeInTheDocument();
 
@@ -539,9 +529,9 @@ describe.each([
       expect(screen.queryByRole('heading', { name: 'Troy McClure' })).not.toBeInTheDocument();
       expect(screen.getByRole('heading', { name: 'Gary McClure' })).toBeInTheDocument();
 
-      // once queries/mutations are changed to use real graphql variables,
-      // we can spy on the request "variables" instead of this hacky string matching
-      expect(updateUserQuerySpy).toHaveBeenCalledWith(expect.stringContaining('firstName: "Gary"'));
+      expect(updateUserVariablesSpy).toHaveBeenCalledWith({
+        userData: expect.objectContaining({ firstName: 'Gary' }),
+      });
     });
   });
 
@@ -653,15 +643,7 @@ describe.each([
         }),
       );
 
-      renderWithProviders(
-        // This can be rolled into "renderWithProviders" once
-        // we fix ShoppingListDetails/index.test.tsx
-        <DynamicallyVariableProvider>
-          <B3LayoutTip />
-          <UserManagement />
-        </DynamicallyVariableProvider>,
-        { preloadedState },
-      );
+      renderWithProviders(<UserManagement />, { preloadedState });
 
       expect(await screen.findByRole('heading', { name: 'Troy McClure' })).toBeInTheDocument();
 
@@ -722,7 +704,7 @@ describe.each([
     it('closes the "Add new user" modal and displays a success message', async () => {
       const adminRole = buildCompanyRoleEdgeWith({ node: { name: 'Admin', id: '9979' } });
 
-      const createUserQuerySpy = vi.fn();
+      const createUserVariablesSpy = vi.fn();
 
       server.use(
         graphql.query('GetUserExtraFields', () =>
@@ -743,8 +725,8 @@ describe.each([
             }),
           ),
         ),
-        graphql.mutation('CreateUser', ({ query }) => {
-          createUserQuerySpy(query);
+        graphql.mutation('CreateUser', ({ variables }) => {
+          createUserVariablesSpy(variables);
 
           return HttpResponse.json({
             data: { userCreate: { user: { id: '11028125', bcId: 13 } } },
@@ -752,15 +734,7 @@ describe.each([
         }),
       );
 
-      renderWithProviders(
-        // This can be rolled into "renderWithProviders" once
-        // we fix ShoppingListDetails/index.test.tsx
-        <DynamicallyVariableProvider>
-          <B3LayoutTip />
-          <UserManagement />
-        </DynamicallyVariableProvider>,
-        { preloadedState },
-      );
+      renderWithProviders(<UserManagement />, { preloadedState });
 
       await userEvent.click(await screen.findByRole('button', { name: 'Add new user' }));
 
@@ -787,22 +761,17 @@ describe.each([
 
       expect(within(alert).getByText('User added successfully')).toBeInTheDocument();
 
-      // once queries/mutations are changed to use real graphql variables,
-      // we can spy on the request "variables" instead of this hacky string matching
-      expect(createUserQuerySpy).toHaveBeenCalledWith(expect.stringContaining('companyId: 776775'));
-      expect(createUserQuerySpy).toHaveBeenCalledWith(expect.stringContaining('firstName: "Gary"'));
-      expect(createUserQuerySpy).toHaveBeenCalledWith(
-        expect.stringContaining('lastName: "McClure"'),
-      );
-      expect(createUserQuerySpy).toHaveBeenCalledWith(
-        expect.stringContaining('email: "gary.mcclure@acme.com"'),
-      );
-      expect(createUserQuerySpy).toHaveBeenCalledWith(
-        expect.stringContaining('phone: "04747665241"'),
-      );
-      expect(createUserQuerySpy).toHaveBeenCalledWith(
-        expect.stringContaining('companyRoleId: 9979'),
-      );
+      expect(createUserVariablesSpy).toHaveBeenCalledWith({
+        userData: {
+          companyId: 776775,
+          firstName: 'Gary',
+          lastName: 'McClure',
+          email: 'gary.mcclure@acme.com',
+          phone: '04747665241',
+          companyRoleId: 9979,
+          extraFields: [],
+        },
+      });
     });
   });
 
@@ -828,15 +797,7 @@ describe.each([
         graphql.query('UserEmailCheck', () => HttpResponse.json(userTakenResponse)),
       );
 
-      renderWithProviders(
-        // This can be rolled into "renderWithProviders" once
-        // we fix ShoppingListDetails/index.test.tsx
-        <DynamicallyVariableProvider>
-          <B3LayoutTip />
-          <UserManagement />
-        </DynamicallyVariableProvider>,
-        { preloadedState },
-      );
+      renderWithProviders(<UserManagement />, { preloadedState });
 
       await userEvent.click(await screen.findByRole('button', { name: 'Add new user' }));
 
