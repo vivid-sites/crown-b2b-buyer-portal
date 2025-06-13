@@ -156,6 +156,7 @@ export default function B3Upload(props: B3UploadProps) {
             }
             var price = Number(item.products.calculatedPrice);
             if(isNaN(price) || price === 0) {
+              item.error = 'Product not for sale ';
               invalidProducts.push(item);
               return false;
             }
