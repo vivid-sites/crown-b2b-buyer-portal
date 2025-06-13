@@ -183,7 +183,7 @@ export default function QuickAdd(props: AddToListContentProps) {
 
       const allQuantity = (skuValue[sku] as number) + num || 0;
 
-      if (purchasingDisabled === '1' || calculatedPrice === 0) {
+      if (purchasingDisabled === '1' || calculatedPrice === '0' || calculatedPrice === 0) {
         notPurchaseSku.push(sku);
         return;
       }

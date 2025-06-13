@@ -115,7 +115,7 @@ export default function AddToShoppingList(props: AddToListProps) {
         notPurchaseSku.push(variantSku);
         return;
       }
-      if (calculatedPrice === 0) {
+      if (calculatedPrice === 0 || calculatedPrice === '0') {
         notPurchaseSku.push(variantSku);
         return;
       }
@@ -263,6 +263,7 @@ export default function AddToShoppingList(props: AddToListProps) {
             handleAddToList={handleCSVAddToList}
             isLoading={isLoading}
             withModifiers
+            type="shoppingList"
           />
         </Box>
       </CardContent>

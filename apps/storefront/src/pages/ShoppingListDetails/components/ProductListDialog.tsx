@@ -18,7 +18,6 @@ interface ProductTableActionProps {
   product: ShoppingListProductItem;
   type?: string;
   onAddToListClick: (id: number) => void;
-  onAddToQuoteClick: (id: number) => void;
   onChooseOptionsClick: (id: number) => void;
   addButtonText: string;
   addQuoteButtonText: string;
@@ -29,7 +28,6 @@ function ProductTableAction(props: ProductTableActionProps) {
     product: { id, allOptions: productOptions, base_price },
     type,
     onAddToListClick,
-    onAddToQuoteClick,
     onChooseOptionsClick,
     addButtonText,
     addQuoteButtonText
@@ -47,14 +45,11 @@ function ProductTableAction(props: ProductTableActionProps) {
 
   let addButtonDisabled = false;
   let buttonText = addButtonText;
-  let onAddDelegate = onAddToListClick;
   if(isNaN(price) || price <= 0){
     if(type === 'quote'){
       buttonText = addQuoteButtonText;
-      onAddDelegate = onAddToQuoteClick;
     }
     else{
-      onAddDelegate = (_) => {};
       addButtonDisabled = true;
     }
   }
@@ -74,7 +69,7 @@ function ProductTableAction(props: ProductTableActionProps) {
     <CustomButton
       variant="outlined"
       onClick={() => {
-        onAddDelegate(id);
+        onAddToListClick(id);
       }}
       disabled={isLoading || addButtonDisabled}
       fullWidth={isMobile}
@@ -93,7 +88,6 @@ interface ProductListDialogProps {
   onSearch: () => void;
   onProductQuantityChange: (id: number, newQuantity: number) => void;
   onAddToListClick: (products: CustomFieldItems[]) => void;
-  onAddToQuoteClick: (products: CustomFieldItems[]) => void;
   onChooseOptionsClick: (id: number) => void;
   isLoading: boolean;
   searchDialogTitle?: string;
@@ -115,7 +109,6 @@ export default function ProductListDialog(props: ProductListDialogProps) {
     onSearch,
     onProductQuantityChange,
     onAddToListClick,
-    onAddToQuoteClick,
     onChooseOptionsClick,
     isLoading,
     type,
@@ -168,27 +161,6 @@ export default function ProductListDialog(props: ProductListDialogProps) {
       }
 
       onAddToListClick([
-        {
-          ...product,
-          newSelectOptionList: [],
-          quantity: parseInt(product.quantity.toString(), 10) || 1,
-          variantId,
-        },
-      ]);
-    }
-  };
-
-  const handleAddToQuote = (id: number) => {
-    const product = productList.find((product) => product.id === id);
-
-    if (product && validateQuantityNumber(product || {})) {
-      let variantId: number | string = product.variantId || 0;
-
-      if (!product.variantId && product.variants?.[0]) {
-        variantId = product.variants[0].variant_id;
-      }
-
-      onAddToQuoteClick([
         {
           ...product,
           newSelectOptionList: [],
@@ -254,7 +226,6 @@ export default function ProductListDialog(props: ProductListDialogProps) {
                   product={product}
                   type={type}
                   onAddToListClick={handleAddToList}
-                  onAddToQuoteClick={handleAddToQuote}
                   onChooseOptionsClick={onChooseOptionsClick}
                   addButtonText={addButtonText}
                   addQuoteButtonText={addQuoteButtonText}

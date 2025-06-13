@@ -9,7 +9,7 @@ import { useBlockPendingAccountViewPrice } from '@/hooks';
 import { searchB2BProducts, searchBcProducts } from '@/shared/service/b2b';
 import { useAppSelector } from '@/store';
 import { snackbar } from '@/utils';
-import { addQuoteDraftProducts, calculateProductListPrice, getNewQuoteProduct } from '@/utils/b3Product/b3Product';
+import { calculateProductListPrice } from '@/utils/b3Product/b3Product';
 
 import { conversionProductsList } from '@/utils/b3Product/shared/config';
 
@@ -133,35 +133,8 @@ export default function SearchProduct({
     }
   };
 
-  const addToQuote = (products: CustomFieldItems[]) => {
-    addQuoteDraftProducts(products);
-  };
-
-  const handleAddToQuoteClick = async (products: CustomFieldItems[]) => {
-    try {
-      setIsLoading(true);
-      await calculateProductListPrice(products);
-
-      const newProducts = getNewQuoteProduct(productList);
-
-      addToQuote(newProducts);
-  
-      snackbar.success(b3Lang('quoteDraft.notification.productPlural'), {
-        isClose: true,
-      });
-  
-      updateList();
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleProductListAddToList = async (products: CustomFieldItems[]) => {
     await handleAddToListClick(products);
-  };
-
-  const handleProductListAddToQuote = async (products: CustomFieldItems[]) => {
-    await handleAddToQuoteClick(products);
   };
 
   const handleChangeOptionsClick = (productId: number) => {
@@ -254,7 +227,6 @@ export default function SearchProduct({
         onProductQuantityChange={handleProductQuantityChange}
         onChooseOptionsClick={handleChangeOptionsClick}
         onAddToListClick={handleProductListAddToList}
-        onAddToQuoteClick={handleProductListAddToQuote}
         searchDialogTitle={searchDialogTitle}
         addButtonText={addButtonText}
         addQuoteButtonText={addQuoteButtonText}

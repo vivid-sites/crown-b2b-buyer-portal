@@ -34,6 +34,7 @@ interface B3UploadProps {
   isLoading?: boolean;
   isToCart?: boolean;
   withModifiers?: boolean;
+  type?: string;
 }
 
 interface BulkUploadCSVProps {
@@ -67,6 +68,7 @@ export default function B3Upload(props: B3UploadProps) {
     isLoading = false,
     isToCart = false,
     withModifiers = false,
+    type = 'shoppingList'
   } = props;
 
   const [isMobile] = useMobile();
@@ -145,7 +147,25 @@ export default function B3Upload(props: B3UploadProps) {
 
       if (productUpload) {
         const { result } = productUpload;
-        const validProduct = result?.validProduct || [];
+        const invalidProducts = (result?.errorProduct || []);
+        
+        const validProduct = (result?.validProduct || [])
+          .filter((item: CustomFieldItems) => {
+            if(type === 'quote') {
+              return true;
+            }
+            var price = Number(item.products.calculatedPrice);
+            if(isNaN(price) || price === 0) {
+              invalidProducts.push(item);
+              return false;
+            }
+            return true;
+          });
+
+        if(result !== null){
+          result.validProduct = validProduct;
+          result.errorProduct = invalidProducts;
+        }
 
         setProductData(validProduct);
         setFileDatas(result);

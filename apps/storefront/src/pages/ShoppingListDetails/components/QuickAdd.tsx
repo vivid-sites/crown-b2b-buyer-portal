@@ -170,7 +170,7 @@ export default function QuickAdd(props: AddToListContentProps) {
           return;
         }
 
-        if (calculatedPrice === 0 && type !== 'quote') {
+        if ((calculatedPrice === '0' || calculatedPrice === 0) && type !== 'quote') {
           notPurchaseSku.push(sku);
           return;
         }

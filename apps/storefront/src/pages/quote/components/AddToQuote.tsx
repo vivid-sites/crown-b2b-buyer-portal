@@ -264,6 +264,7 @@ export default function AddToQuote(props: AddToListProps) {
             setIsOpen={setIsOpenBulkLoadCSV}
             handleAddToList={handleCSVAddToList}
             isLoading={isLoading}
+            type="quote"
             withModifiers
           />
         </B3CollapseContainer>

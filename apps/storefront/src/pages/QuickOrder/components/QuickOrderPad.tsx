@@ -148,7 +148,7 @@ export default function QuickOrderPad(props: QuickOrderPadProps) {
         productId,
         modifiers,
       } = currentProduct;
-      if (purchasingDisabled === '1' || purchasingDisabled || calculatedPrice === 0) {
+      if (purchasingDisabled === '1' || purchasingDisabled || calculatedPrice === 0 || calculatedPrice === '0') {
         notPurchaseSku.push(variantSku);
         return;
       }
@@ -392,6 +392,7 @@ export default function QuickOrderPad(props: QuickOrderPadProps) {
         addBtnText={addBtnText}
         isLoading={isLoading}
         isToCart
+        type="quickOrder"
       />
     </Card>
   );
