@@ -144,6 +144,19 @@ export const useOpenPDP = ({ setOpenPage, role }: MutationObserverProps) => {
 
     const wishlistSdd = document.querySelector('form[data-wishlist-add]');
     if (!addToShoppingListAll.length && !CustomAddToShoppingListAll.length) return;
+
+    // custom code - don't inject shopping list button if product price is not valid
+    const productView: HTMLElement | null = addToShoppingListAll[0].closest(
+      config['dom.productView'],
+    );
+    if (!productView) return undefined;
+
+    const productPrice = (productView.querySelector('input[name=product_price]') as any)?.value;
+    if(isNaN(Number(productPrice)) || Number(productPrice) <= 0) {
+      return;
+    }
+    ////////////////////////////////////////////////////////////////////////////////
+
     if (document.querySelectorAll('.b2b-add-to-list').length) {
       const cacheShoppingListDom = cache.current;
       const isAddStyle = Object.keys(cacheShoppingListDom).every(
