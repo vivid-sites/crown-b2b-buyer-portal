@@ -99,7 +99,6 @@ import {
   addProductToShoppingList,
   createB2BShoppingList,
   createBcShoppingList,
-  deleteB2BShoppingList,
   deleteB2BShoppingListItem,
   deleteBcShoppingList,
   deleteBcShoppingListItem,
@@ -116,12 +115,7 @@ import {
   updateBcShoppingList,
   updateBcShoppingListsItem,
 } from './graphql/shoppingList';
-import {
-  checkUserBCEmail,
-  checkUserEmail,
-  deleteUsers,
-  getUsersExtraFieldsInfo,
-} from './graphql/users';
+import { checkUserBCEmail, checkUserEmail } from './graphql/users';
 
 export {
   getB2BAccountSettings,
@@ -159,12 +153,10 @@ export {
   createBcShoppingList,
   createQuote,
   deleteB2BAddress,
-  deleteB2BShoppingList,
   deleteB2BShoppingListItem,
   deleteBCCustomerAddress,
   deleteBcShoppingList,
   deleteBcShoppingListItem,
-  deleteUsers,
   duplicateB2BShoppingList,
   duplicateBcShoppingList,
   exportB2BQuotePdf,
@@ -225,7 +217,6 @@ export {
   getStorefrontDefaultLanguages,
   getTaxZoneRates,
   getUserCompany,
-  getUsersExtraFieldsInfo,
   getProductPricing,
   guestProductsBulkUploadCSV,
   quoteDetailAttachFileCreate,

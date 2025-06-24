@@ -1,6 +1,9 @@
 import {
   buildCompanyStateWith,
   builder,
+  bulk,
+  faker,
+  graphql,
   http,
   HttpResponse,
   renderWithProviders,
@@ -8,7 +11,9 @@ import {
   startMockServer,
   userEvent,
   waitForElementToBeRemoved,
+  within,
 } from 'tests/test-utils';
+import { when } from 'vitest-when';
 
 import { GQLRequest } from '@/shared/service/request/b3Fetch';
 import { CompanyStatus, Customer, CustomerRole, LoginTypes, UserTypes } from '@/types';
@@ -33,7 +38,7 @@ const buildCustomerWith = builder<Customer>(() => ({
 }));
 
 // TODO: we should use faker to generate random data once faker is in place
-const buildShoppingListGraphQLResponseNodeWith = builder(() => ({
+const buildB2BShoppingListNodeWith = builder(() => ({
   id: '123',
   name: 'shopping list 1',
   description: 'shopping list 1 description',
@@ -62,13 +67,30 @@ const buildShoppingListGraphQLResponseNodeWith = builder(() => ({
   },
 }));
 
+const buildB2BShoppingListResponseWith = builder(() => {
+  const numberOfShoppingLists = faker.number.int({ min: 1, max: 10 });
+
+  return {
+    data: {
+      shoppingLists: {
+        totalCount: faker.number.int({ min: numberOfShoppingLists, max: 100 }),
+        pageInfo: {
+          hasNextPage: faker.datatype.boolean(),
+          hasPreviousPage: faker.datatype.boolean(),
+        },
+        edges: bulk(buildB2BShoppingListNodeWith, 'WHATEVER_VALUES').times(numberOfShoppingLists),
+      },
+    },
+  };
+});
+
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
 it('shows approved shopping list with "approved" label', async () => {
   const approvedStatusCode = 0;
-  const approvedShoppingList = buildShoppingListGraphQLResponseNodeWith({
+  const approvedShoppingList = buildB2BShoppingListNodeWith({
     status: approvedStatusCode,
   });
   const response = {
@@ -110,7 +132,7 @@ it('shows approved shopping list with "approved" label', async () => {
 
 it('shows draft shopping list with "draft" label', async () => {
   const draftStatusCode = 30;
-  const draftShoppingList = buildShoppingListGraphQLResponseNodeWith({ status: draftStatusCode });
+  const draftShoppingList = buildB2BShoppingListNodeWith({ status: draftStatusCode });
   const response = {
     data: {
       shoppingLists: {
@@ -150,7 +172,7 @@ it('shows draft shopping list with "draft" label', async () => {
 
 it('shows ready for approval shopping list with "ready for approval" label', async () => {
   const readyForApprovalStatusCode = 40;
-  const readyForApprovalShoppingList = buildShoppingListGraphQLResponseNodeWith({
+  const readyForApprovalShoppingList = buildB2BShoppingListNodeWith({
     status: readyForApprovalStatusCode,
   });
   const response = {
@@ -192,7 +214,7 @@ it('shows ready for approval shopping list with "ready for approval" label', asy
 
 it('shows rejected shopping list with "rejected" label', async () => {
   const rejectedStatusCode = 50;
-  const rejectedShoppingList = buildShoppingListGraphQLResponseNodeWith({
+  const rejectedShoppingList = buildB2BShoppingListNodeWith({
     status: rejectedStatusCode,
   });
   const response = {
@@ -236,7 +258,7 @@ it('shows rejected shopping list with "rejected" label', async () => {
 // For now we treat Deleted as Rejected so that the shopping lists that were previously rejected remain the same behavior
 it('shows deleted shopping list with "rejected" label', async () => {
   const deletedStatusCode = 20;
-  const deletedShoppingList = buildShoppingListGraphQLResponseNodeWith({
+  const deletedShoppingList = buildB2BShoppingListNodeWith({
     status: deletedStatusCode,
   });
   const response = {
@@ -299,13 +321,13 @@ describe('when user has "create_shopping_list" permission', () => {
         phoneNumber: '123345',
         bcId: '109',
       };
-      const approvedShoppingList = buildShoppingListGraphQLResponseNodeWith({
+      const approvedShoppingList = buildB2BShoppingListNodeWith({
         name: 'shopping list 1',
         customerInfo,
         companyInfo: companyInfoInShoppingList,
         status: approvedStatusCode,
       });
-      const readyForApprovalShoppingList = buildShoppingListGraphQLResponseNodeWith({
+      const readyForApprovalShoppingList = buildB2BShoppingListNodeWith({
         name: 'shopping list 2',
         customerInfo,
         status: readyForApprovalStatusCode,
@@ -398,7 +420,7 @@ describe('when user has "create_shopping_list" permission', () => {
         phoneNumber: '123345',
         bcId: '109',
       };
-      const rejectedShoppingList = buildShoppingListGraphQLResponseNodeWith({
+      const rejectedShoppingList = buildB2BShoppingListNodeWith({
         customerInfo,
         companyInfo: companyInfoInShoppingList,
         status: rejectedStatusCode,
@@ -489,7 +511,7 @@ describe('when user has "create_shopping_list" permission', () => {
         phoneNumber: '123345',
         bcId: '109',
       };
-      const deletedShoppingList = buildShoppingListGraphQLResponseNodeWith({
+      const deletedShoppingList = buildB2BShoppingListNodeWith({
         customerInfo,
         companyInfo: companyInfoInShoppingList,
         status: deletedStatusCode,
@@ -580,13 +602,13 @@ describe('when user has "create_shopping_list" permission', () => {
         phoneNumber: '123345',
         bcId: '109',
       };
-      const approvedShoppingList = buildShoppingListGraphQLResponseNodeWith({
+      const approvedShoppingList = buildB2BShoppingListNodeWith({
         name: 'shopping list 1',
         customerInfo,
         companyInfo: companyInfoInShoppingList,
         status: approvedStatusCode,
       });
-      const readyForApprovalShoppingList = buildShoppingListGraphQLResponseNodeWith({
+      const readyForApprovalShoppingList = buildB2BShoppingListNodeWith({
         name: 'shopping list 2',
         customerInfo,
         status: readyForApprovalStatusCode,
@@ -682,7 +704,7 @@ describe('when user does not have "create_shopping_list" permission', () => {
       phoneNumber: '123345',
       bcId: '109',
     };
-    const rejectedShoppingList = buildShoppingListGraphQLResponseNodeWith({
+    const rejectedShoppingList = buildB2BShoppingListNodeWith({
       customerInfo,
       companyInfo: companyInfoInShoppingList,
       status: rejectedStatusCode,
@@ -738,7 +760,7 @@ describe('when user filters shopping lists by status "rejected"', () => {
   // Status code 20 was previously misused as Rejected in the frontend, which is actually Deleted
   // For now when we filter by "Rejected" we also include "Deleted"
   it('fetches shopping lists with status "Rejected" and "Deleted"', async () => {
-    const shoppingList = buildShoppingListGraphQLResponseNodeWith('WHATEVER_VALUES');
+    const shoppingList = buildB2BShoppingListNodeWith('WHATEVER_VALUES');
     const response = {
       data: {
         shoppingLists: {
@@ -795,5 +817,74 @@ describe('when user filters shopping lists by status "rejected"', () => {
     const lastRequestBody = requestBodies[requestBodies.length - 1];
 
     expect(lastRequestBody.query).toContain('status: [20, 50]');
+  });
+});
+
+describe('when the user is a B2B customer', () => {
+  const approvedB2BCompany = buildCompanyStateWith({
+    permissions: [
+      { code: 'delete_shopping_list_item', permissionLevel: 1 },
+      { code: 'create_shopping_list', permissionLevel: 1 },
+    ],
+    companyInfo: { status: CompanyStatus.APPROVED },
+    customer: { userType: UserTypes.MULTIPLE_B2C, firstName: 'John', lastName: 'Doe' },
+  });
+
+  const preloadedState = { company: approvedB2BCompany };
+
+  describe('when deleting a shopping list succeeds', () => {
+    it('displays a success message and displays the shopping lists', async () => {
+      const deleteShoppingList = vi.fn();
+      const getB2BCustomerShoppingLists = vi.fn();
+
+      const outdatedList = buildB2BShoppingListNodeWith({
+        name: 'My outdated shopping list',
+        id: '123',
+        status: 50,
+      });
+
+      getB2BCustomerShoppingLists.mockReturnValueOnce(
+        buildB2BShoppingListResponseWith({ data: { shoppingLists: { edges: [outdatedList] } } }),
+      );
+
+      server.use(
+        graphql.query('B2BCustomerShoppingLists', () =>
+          HttpResponse.json(getB2BCustomerShoppingLists()),
+        ),
+        graphql.query('GetShoppingListsCreatedByUser', () =>
+          HttpResponse.json({ data: { createdByUser: { results: [] } } }),
+        ),
+        graphql.mutation('DeleteShoppingList', ({ variables }) =>
+          HttpResponse.json(deleteShoppingList(variables)),
+        ),
+      );
+
+      renderWithProviders(<ShoppingLists />, { preloadedState });
+
+      await waitForElementToBeRemoved(() => screen.queryByText(/loading/i));
+
+      await userEvent.click(screen.getByRole('button', { name: 'delete' }));
+
+      const confirmDeleteModal = await screen.findByRole('dialog');
+
+      when(deleteShoppingList)
+        .calledWith({ id: 123 })
+        .thenReturn({ data: { shoppingListsDelete: { message: 'Success' } } });
+
+      getB2BCustomerShoppingLists.mockReturnValueOnce(
+        buildB2BShoppingListResponseWith({ data: { shoppingLists: { edges: [] } } }),
+      );
+
+      await userEvent.click(within(confirmDeleteModal).getByRole('button', { name: 'Delete' }));
+
+      const alert = await screen.findByRole('alert');
+
+      expect(
+        within(alert).getByText('The shopping list was successfully deleted'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('heading', { name: 'My outdated shopping list' }),
+      ).not.toBeInTheDocument();
+    });
   });
 });

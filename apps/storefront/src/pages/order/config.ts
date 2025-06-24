@@ -22,8 +22,6 @@ export interface FilterMoreProps {
   orderStatus?: string | number;
 }
 
-export const defaultSortKey = 'orderId';
-
 export const sortKeys = {
   orderId: 'bcOrderId',
   poNumber: 'poNumber',
@@ -33,27 +31,11 @@ export const sortKeys = {
   createdAt: 'createdAt',
 };
 
-const b2bFilterSearch: FilterSearchProps = {
-  q: '',
-  companyId: '',
-  beginDateAt: null,
-  endDateAt: null,
-  companyName: '',
-  orderBy: `-${sortKeys[defaultSortKey]}`,
-  createdBy: '',
-  orderNumber: '',
-  poNumber: '',
-  isShowMy: 0,
-  companyIds: [],
-};
-
-const bcFilterSearch = {
-  beginDateAt: null,
-  endDateAt: null,
-  orderBy: `-${sortKeys[defaultSortKey]}`,
-  createdBy: '',
-  q: '',
-};
+export function assertSortKey(key: string): asserts key is keyof typeof sortKeys {
+  if (!Object.keys(sortKeys).includes(key)) {
+    throw new Error(`Invalid sort key: ${key}`);
+  }
+}
 
 export const getFilterMoreData = (
   isB2BUser: boolean,
@@ -137,13 +119,31 @@ export const getFilterMoreData = (
   return filterCurrentMoreList;
 };
 
-export const getInitFilter = (
-  isCompanyOrder: boolean,
-  isB2BUser: boolean,
-): Partial<FilterSearchProps> => {
-  if (isB2BUser) b2bFilterSearch.isShowMy = isCompanyOrder ? 0 : 1;
+export const getCustomerInitFilter = (): Partial<FilterSearchProps> => {
+  return {
+    beginDateAt: null,
+    endDateAt: null,
+    createdBy: '',
+    q: '',
+  };
+};
 
-  return isB2BUser ? b2bFilterSearch : bcFilterSearch;
+export const getCompanyInitFilter = (
+  isCompanyOrder: boolean,
+  companyId: number,
+): Partial<FilterSearchProps> => {
+  return {
+    companyId: '',
+    beginDateAt: null,
+    endDateAt: null,
+    companyName: '',
+    createdBy: '',
+    orderNumber: '',
+    poNumber: '',
+    companyIds: [companyId],
+    isShowMy: isCompanyOrder ? 0 : 1,
+    q: '',
+  };
 };
 
 export const getOrderStatusText = (status: number | string, getOrderStatuses: any) =>
