@@ -136,17 +136,6 @@ const createShoppingList = (fn: string) => `mutation($shoppingListData: Shopping
   }
 }`;
 
-const duplicateShoppingList = (
-  fn: string,
-) => `mutation($sampleShoppingListId: Int!, $shoppingListData: ShoppingListsDuplicateInputType!){
-  ${fn}(
-    sampleShoppingListId: $sampleShoppingListId
-    shoppingListData: $shoppingListData
-  ) {
-    ${getShoppingListInfo}
-  }
-}`;
-
 const updateShoppingListsItem = (data: CustomFieldItems) => `mutation {
   shoppingListsItemsUpdate(
     itemId: ${data.itemId}
@@ -412,17 +401,6 @@ const createCustomerShoppingList = (
   }
 }`;
 
-const duplicateCustomerShoppingList = (
-  fn: string,
-) => `mutation($sampleShoppingListId: Int!, $shoppingListData: ShoppingListsDuplicateInputType!){
-  ${fn}(
-    sampleShoppingListId: $sampleShoppingListId
-    shoppingListData: $shoppingListData
-  ) {
-    ${getCustomerShoppingListInfo}
-  }
-}`;
-
 const deleteCustomerShoppingList = (id: number) => `mutation{
   customerShoppingListsDelete (id: ${id}) {
     message
@@ -593,19 +571,6 @@ export const updateB2BShoppingList = (data: Partial<ShoppingListParams>) =>
     },
   });
 
-export const duplicateB2BShoppingList = (data: Partial<ShoppingListParams>) =>
-  B3Request.graphqlB2B({
-    query: duplicateShoppingList('shoppingListsDuplicate'),
-    variables: {
-      sampleShoppingListId: data?.sampleShoppingListId ? Number(data.sampleShoppingListId) : 1,
-      shoppingListData: {
-        name: data.name,
-        description: data.description,
-        status: data.status,
-      },
-    },
-  });
-
 export const getB2BShoppingListDetails = (data: CustomFieldItems = {}) =>
   B3Request.graphqlB2B({
     query: getShoppingListDetails(data),
@@ -652,18 +617,6 @@ export const updateBcShoppingList = (data: Partial<ShoppingListParams>) =>
         name: data.name,
         description: data.description,
         channelId: data?.channelId ? Number(data.channelId) : 1,
-      },
-    },
-  });
-
-export const duplicateBcShoppingList = (data: Partial<ShoppingListParams>) =>
-  B3Request.graphqlB2B({
-    query: duplicateCustomerShoppingList('customerShoppingListsDuplicate'),
-    variables: {
-      sampleShoppingListId: data?.sampleShoppingListId ? Number(data.sampleShoppingListId) : 1,
-      shoppingListData: {
-        name: data.name,
-        description: data.description,
       },
     },
   });

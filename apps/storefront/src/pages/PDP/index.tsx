@@ -1,4 +1,4 @@
-import { lazy, useContext, useState } from 'react';
+import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import config from '@b3/global-b3';
 import { useB3Lang } from '@b3/lang';
@@ -7,8 +7,7 @@ import { GlobalContext } from '@/shared/global';
 import {
   addProductToBcShoppingList,
   addProductToShoppingList,
-  searchB2BProducts,
-  searchBcProducts,
+  searchProducts,
 } from '@/shared/service/b2b';
 import { isB2BUserSelector, store, useAppSelector } from '@/store';
 import { getActiveCurrencyInfo, serialize, ValidationError } from '@/utils';
@@ -16,15 +15,14 @@ import { getProductOptionList, isAllRequiredOptionFilled } from '@/utils/b3AddTo
 import { getValidOptionsList } from '@/utils/b3Product/b3Product';
 
 import { conversionProductsList } from '../../utils/b3Product/shared/config';
+import CreateShoppingList from '../OrderDetail/components/CreateShoppingList';
+import OrderShoppingList from '../OrderDetail/components/OrderShoppingList';
 
 import { addProductsToShoppingListErrorHandler } from './addProductsToShoppingListErrorHandler';
 import { useAddedToShoppingListAlert } from './useAddedToShoppingListAlert';
 
 export { useAddedToShoppingListAlert } from './useAddedToShoppingListAlert';
 export { addProductsToShoppingListErrorHandler } from './addProductsToShoppingListErrorHandler';
-
-const CreateShoppingList = lazy(() => import('../OrderDetail/components/CreateShoppingList'));
-const OrderShoppingList = lazy(() => import('../OrderDetail/components/OrderShoppingList'));
 
 interface AddProductsToShoppingListParams {
   isB2BUser: boolean;
@@ -41,9 +39,8 @@ export const addProductsToShoppingList = async ({
 }: AddProductsToShoppingListParams) => {
   const { currency_code: currencyCode } = getActiveCurrencyInfo();
   const { id: companyId } = store.getState().company.companyInfo;
-  const getProducts = isB2BUser ? searchB2BProducts : searchBcProducts;
 
-  const { productsSearch } = await getProducts({
+  const { productsSearch } = await searchProducts({
     productIds: items.map(({ productId }) => productId),
     currencyCode,
     companyId,

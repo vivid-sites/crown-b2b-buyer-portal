@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useB3Lang } from '@b3/lang';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
+import { UploadFile as UploadFileIcon } from '@mui/icons-material';
 import { Box, Card, CardContent, Divider, Link, Typography } from '@mui/material';
 
 import { B3Upload, successTip } from '@/components';
@@ -19,12 +19,7 @@ import { addCartProductToVerify } from '../utils';
 
 import QuickAdd from './QuickAdd';
 
-interface QuickOrderPadProps {
-  isB2BUser: boolean;
-}
-
-export default function QuickOrderPad(props: QuickOrderPadProps) {
-  const { isB2BUser } = props;
+export default function QuickOrderPad() {
   const [isMobile] = useMobile();
   const b3Lang = useB3Lang();
 
@@ -355,7 +350,6 @@ export default function QuickOrderPad(props: QuickOrderPadProps) {
             searchDialogTitle={b3Lang('purchasedProducts.quickOrderPad.quickOrderPad')}
             type="quickOrder"
             addButtonText={b3Lang('purchasedProducts.quickOrderPad.addToCart')}
-            isB2BUser={isB2BUser}
           />
 
           <Divider />

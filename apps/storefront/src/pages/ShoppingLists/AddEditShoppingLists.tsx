@@ -4,14 +4,6 @@ import { useB3Lang } from '@b3/lang';
 
 import { B3CustomForm } from '@/components';
 import B3Dialog from '@/components/B3Dialog';
-import {
-  createB2BShoppingList,
-  createBcShoppingList,
-  duplicateB2BShoppingList,
-  duplicateBcShoppingList,
-  updateB2BShoppingList,
-  updateBcShoppingList,
-} from '@/shared/service/b2b';
 import { rolePermissionSelector, useAppSelector } from '@/store';
 import { ShoppingListStatus } from '@/types/shoppingList';
 import { channelId, snackbar } from '@/utils';
@@ -21,6 +13,12 @@ import {
   GetFilterMoreListProps,
   ShoppingListsItemsProps,
 } from './config';
+import { createB2BShoppingList } from './createB2BShoppingList';
+import { createBcShoppingList } from './createBcShoppingList';
+import { duplicateB2BShoppingList } from './duplicateB2BShoppingList';
+import { duplicateB2CShoppingList } from './duplicateB2CShoppingList';
+import { updateB2BShoppingListDetails } from './updateB2BShoppingListDetails';
+import { updateB2CShoppingListDetails } from './updateB2CShoppingListDetails';
 
 interface AddEditUserProps {
   renderList: () => void;
@@ -80,21 +78,24 @@ function AddEditShoppingLists(
           ...data,
         };
 
-        let fn = isB2BUser ? createB2BShoppingList : createBcShoppingList;
+        // @ts-expect-error this all needs refactoring to give types a chance of matching
+        let fn: (params: typeof params) => Promise<unknown> = isB2BUser
+          ? createB2BShoppingList
+          : createBcShoppingList;
         let successTip = b3Lang('shoppingLists.addSuccess');
         if (type === 'edit') {
           if (isB2BUser) {
-            fn = updateB2BShoppingList;
+            fn = updateB2BShoppingListDetails;
             params.status = editData?.status;
           } else {
-            fn = updateBcShoppingList;
+            fn = updateB2CShoppingListDetails;
             params.channelId = channelId;
           }
 
           params.id = editData?.id || 0;
           successTip = b3Lang('shoppingLists.updateSuccess');
         } else if (type === 'dup') {
-          fn = isB2BUser ? duplicateB2BShoppingList : duplicateBcShoppingList;
+          fn = isB2BUser ? duplicateB2BShoppingList : duplicateB2CShoppingList;
           params.sampleShoppingListId = editData?.id || 0;
           successTip = b3Lang('shoppingLists.duplicateSuccess');
         } else if (type === 'add') {

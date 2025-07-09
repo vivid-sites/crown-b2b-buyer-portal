@@ -1,7 +1,7 @@
 import { useContext, useState } from 'react';
 import { dispatchEvent } from '@b3/hooks';
 import { useB3Lang } from '@b3/lang';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
+import { UploadFile as UploadFileIcon } from '@mui/icons-material';
 import { Box, Card, CardContent, Divider, Typography } from '@mui/material';
 
 import { B3Upload } from '@/components';
@@ -229,12 +229,7 @@ export default function AddToShoppingList(props: AddToListProps) {
       <CardContent>
         <Box>
           <Typography variant="h5">{b3Lang('shoppingList.addToShoppingList.addToList')}</Typography>
-          <SearchProduct
-            updateList={updateList}
-            addToList={addToList}
-            isB2BUser={isB2BUser}
-            type="shoppingList"
-          />
+          <SearchProduct updateList={updateList} addToList={addToList} type="shoppingList" />
 
           <Divider />
 

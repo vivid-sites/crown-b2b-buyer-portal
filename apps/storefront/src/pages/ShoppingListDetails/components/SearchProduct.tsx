@@ -1,12 +1,12 @@
 import { ChangeEvent, KeyboardEvent, useState } from 'react';
 import { useB3Lang } from '@b3/lang';
-import SearchIcon from '@mui/icons-material/Search';
+import { Search as SearchIcon } from '@mui/icons-material';
 import { Box, InputAdornment, TextField, Typography } from '@mui/material';
 
 import CustomButton from '@/components/button/CustomButton';
 import B3Spin from '@/components/spin/B3Spin';
 import { useBlockPendingAccountViewPrice } from '@/hooks';
-import { searchB2BProducts, searchBcProducts } from '@/shared/service/b2b';
+import { searchProducts } from '@/shared/service/b2b';
 import { useAppSelector } from '@/store';
 import { snackbar } from '@/utils';
 import { calculateProductListPrice } from '@/utils/b3Product/b3Product';
@@ -24,7 +24,6 @@ interface SearchProductProps {
   searchDialogTitle?: string;
   addButtonText?: string;
   addQuoteButtonText?: string;
-  isB2BUser: boolean;
   type?: string;
 }
 
@@ -34,7 +33,6 @@ export default function SearchProduct({
   searchDialogTitle,
   addButtonText,
   addQuoteButtonText,
-  isB2BUser,
   type,
 }: SearchProductProps) {
   const b3Lang = useB3Lang();
@@ -66,11 +64,10 @@ export default function SearchProduct({
       snackbar.info(b3Lang('global.searchProductAddProduct.businessAccountPendingApproval'));
       return;
     }
-    const getProducts = isB2BUser ? searchB2BProducts : searchBcProducts;
 
     setIsLoading(true);
     try {
-      const { productsSearch } = await getProducts({
+      const { productsSearch } = await searchProducts({
         search: searchText,
         companyId,
         customerGroupId,
@@ -241,7 +238,6 @@ export default function SearchProduct({
         onCancel={handleChooseOptionsDialogCancel}
         onConfirm={handleChooseOptionsDialogConfirm}
         addButtonText={addButtonText}
-        isB2BUser={isB2BUser}
       />
     </Box>
   );

@@ -10,12 +10,10 @@ import { useMobile } from '@/hooks';
 import useScrollBar from '@/hooks/useScrollBar';
 import { GlobalContext } from '@/shared/global';
 import {
-  exportB2BQuotePdf,
-  exportBcQuotePdf,
+  exportQuotePdf,
   getB2BQuoteDetail,
   getBcQuoteDetail,
-  searchB2BProducts,
-  searchBcProducts,
+  searchProducts,
 } from '@/shared/service/b2b';
 import {
   activeCurrencyInfoSelector,
@@ -85,9 +83,7 @@ function useData() {
 
       const options = { productIds, currencyCode, companyId, customerGroupId };
 
-      const { productsSearch } = await (isB2BUser
-        ? searchB2BProducts(options)
-        : searchBcProducts(options));
+      const { productsSearch } = await searchProducts(options);
 
       const newProductsSearch = conversionProductsList(productsSearch);
 
@@ -445,9 +441,7 @@ function QuoteDetail() {
         lang: bcLanguage,
       };
 
-      const fn = Number(role) === 99 ? exportBcQuotePdf : exportB2BQuotePdf;
-
-      const quotePdf = await fn(data);
+      const quotePdf = await exportQuotePdf(data);
 
       if (quotePdf) {
         return {
