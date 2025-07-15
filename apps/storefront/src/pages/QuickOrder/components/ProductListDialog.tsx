@@ -22,10 +22,10 @@ interface ProductTableActionProps {
 
 function ProductTableAction(props: ProductTableActionProps) {
   const {
-    product: { id, allOptions: productOptions },
+    product: { id, allOptions: productOptions, base_price },
     onAddToListClick,
     onChooseOptionsClick,
-    addButtonText,
+    addButtonText
   } = props;
 
   const {
@@ -36,13 +36,20 @@ function ProductTableAction(props: ProductTableActionProps) {
 
   const b3Lang = useB3Lang();
 
+  let price = Number(base_price);
+
+  let addButtonDisabled = false;
+  if(isNaN(price) || price <= 0){
+    addButtonDisabled = true;
+  }
+
   return productOptions && productOptions.length > 0 ? (
     <CustomButton
       variant="outlined"
       onClick={() => {
         onChooseOptionsClick(id);
       }}
-      disabled={isLoading}
+      disabled={isLoading || addButtonDisabled}
       fullWidth={isMobile}
     >
       {b3Lang('global.searchProduct.chooseOptionsButton')}
@@ -53,7 +60,7 @@ function ProductTableAction(props: ProductTableActionProps) {
       onClick={() => {
         onAddToListClick(id);
       }}
-      disabled={isLoading}
+      disabled={isLoading || addButtonDisabled}
       fullWidth={isMobile}
     >
       {addButtonText}
