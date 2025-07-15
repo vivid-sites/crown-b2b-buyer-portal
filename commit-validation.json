@@ -13,6 +13,8 @@
     "addresses",
     "headless",
     "user-management",
-    "dashboard"
+    "dashboard",
+    "quick-order",
+    "company-hierarchy"
   ]
 }

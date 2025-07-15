@@ -43,7 +43,15 @@ export default defineConfig(({ mode }) => {
       },
     },
     test: {
-      slowTestThreshold: 4_000,
+      onConsoleLog(warning) {
+        // TODO: This warns in production, will have to be fixed in the future.
+        return !warning.includes('The value provided to Autocomplete is invalid.');
+      },
+      // We override the default timeout in CI to account for slower test execution.
+      // This is necessary because the default timeout of 5 seconds is not enough for some tests
+      // that involve network requests or complex component interactions.
+      testTimeout: process.env.CI === 'true' ? 40_000 : 5_000,
+      slowTestThreshold: 3_000,
       env: {
         VITE_B2B_URL: 'https://api-b2b.bigcommerce.com',
         VITE_IS_LOCAL_ENVIRONMENT: 'TRUE',
