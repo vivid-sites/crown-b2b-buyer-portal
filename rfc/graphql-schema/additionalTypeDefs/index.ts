@@ -3,6 +3,8 @@ import userManagement from './byPage/userManagement'
 import orderList from './byPage/orders'
 import shoppingLists from './byPage/shoppingLists'
 import companyHierarchy from './byPage/companyHierarchy'
+import addresses from './byPage/addresses'
+import companyRegistration from './companyRegistration'
 
 export default [
   userManagement,
@@ -10,4 +12,6 @@ export default [
   dashboard,
   shoppingLists,
   companyHierarchy,
+  companyRegistration,
+  addresses,
 ]

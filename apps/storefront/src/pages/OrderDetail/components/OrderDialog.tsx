@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { FieldValues, useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
 import { useB3Lang } from '@b3/lang';
 import { Box, Typography } from '@mui/material';
 import Cookies from 'js-cookie';
 
-import { B3CustomForm, successTip } from '@/components';
+import { B3CustomForm } from '@/components';
 import B3Dialog from '@/components/B3Dialog';
 import { CART_URL } from '@/constants';
 import { useMobile } from '@/hooks';
@@ -72,6 +73,7 @@ export default function OrderDialog({
   itemKey,
   orderId,
 }: OrderDialogProps) {
+  const navigate = useNavigate();
   const isB2BUser = useAppSelector(isB2BUserSelector);
   const [isOpenCreateShopping, setOpenCreateShopping] = useState(false);
   const [openShoppingList, setOpenShoppingList] = useState(false);
@@ -232,32 +234,26 @@ export default function OrderDialog({
 
       if (status) {
         setOpen(false);
-        snackbar.success('', {
-          jsx: successTip({
-            message: b3Lang('orderDetail.reorder.productsAdded'),
-            link: CART_URL,
-            linkText: b3Lang('orderDetail.viewCart'),
-            isOutLink: true,
-            isCustomEvent: true,
-          }),
-          isClose: true,
+        snackbar.success(b3Lang('orderDetail.reorder.productsAdded'), {
+          action: {
+            label: b3Lang('orderDetail.reorder.viewCart'),
+            onClick: () => {
+              if (window.b2b.callbacks.dispatchEvent('on-click-cart-button')) {
+                window.location.href = CART_URL;
+              }
+            },
+          },
         });
         b3TriggerCartNumber();
       } else if (res.errors) {
-        snackbar.error(res.errors[0].message, {
-          isClose: true,
-        });
+        snackbar.error(res.errors[0].message);
       }
     } catch (err) {
       if (err instanceof Error) {
-        snackbar.error(err.message, {
-          isClose: true,
-        });
+        snackbar.error(err.message);
       } else if (typeof err === 'object' && err !== null && 'detail' in err) {
         const customError = err as { detail: string };
-        snackbar.error(customError.detail, {
-          isClose: true,
-        });
+        snackbar.error(customError.detail);
       }
     } finally {
       setIsRequestLoading(false);
@@ -329,13 +325,13 @@ export default function OrderDialog({
         items: params,
       });
 
-      snackbar.success('', {
-        jsx: successTip({
-          message: b3Lang('orderDetail.addToShoppingList.productsAdded'),
-          link: `/shoppingList/${id}`,
-          linkText: b3Lang('orderDetail.viewShoppingList'),
-        }),
-        isClose: true,
+      snackbar.success(b3Lang('orderDetail.addToShoppingList.productsAdded'), {
+        action: {
+          label: b3Lang('orderDetail.viewShoppingList'),
+          onClick: () => {
+            navigate(`/shoppingList/${id}`);
+          },
+        },
       });
 
       setOpenShoppingList(false);

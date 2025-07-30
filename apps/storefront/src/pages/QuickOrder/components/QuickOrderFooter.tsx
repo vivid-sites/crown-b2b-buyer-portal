@@ -2,19 +2,9 @@ import { Dispatch, SetStateAction, useContext, useEffect, useRef, useState } fro
 import { useNavigate } from 'react-router-dom';
 import { useB3Lang } from '@b3/lang';
 import { ArrowDropDown } from '@mui/icons-material';
-import {
-  Box,
-  Button,
-  Grid,
-  Menu,
-  MenuItem,
-  SxProps,
-  Typography,
-  useMediaQuery,
-} from '@mui/material';
+import { Box, Grid, Menu, MenuItem, SxProps, Typography, useMediaQuery } from '@mui/material';
 import { v1 as uuid } from 'uuid';
 
-import { successTip } from '@/components';
 import CustomButton from '@/components/button/CustomButton';
 import { CART_URL, PRODUCT_DEFAULT_IMAGE } from '@/constants';
 import { useMobile } from '@/hooks';
@@ -229,24 +219,20 @@ function QuickOrderFooter(props: QuickOrderFooterProps) {
       const res = await callCart(lineItems);
 
       if (res && !res.errors) {
-        snackbar.success('', {
-          jsx: successTip({
-            message: b3Lang('purchasedProducts.footer.productsAdded'),
-            link: CART_URL,
-            linkText: b3Lang('purchasedProducts.footer.viewCart'),
-            isOutLink: true,
-            isCustomEvent: true,
-          }),
-          isClose: true,
+        snackbar.success(b3Lang('purchasedProducts.footer.productsAdded'), {
+          action: {
+            label: b3Lang('purchasedProducts.footer.viewCart'),
+            onClick: () => {
+              if (window.b2b.callbacks.dispatchEvent('on-click-cart-button')) {
+                window.location.href = CART_URL;
+              }
+            },
+          },
         });
       } else if (res && res.errors) {
-        snackbar.error(res.errors[0].message, {
-          isClose: true,
-        });
+        snackbar.error(res.errors[0].message);
       } else {
-        snackbar.error('Error has occurred', {
-          isClose: true,
-        });
+        snackbar.error('Error has occurred');
       }
     } finally {
       b3TriggerCartNumber();
@@ -294,9 +280,7 @@ function QuickOrderFooter(props: QuickOrderFooterProps) {
         return !variantSku;
       });
       if (noSkuProducts.length > 0) {
-        snackbar.error(b3Lang('purchasedProducts.footer.cantAddProductsNoSku'), {
-          isClose: true,
-        });
+        snackbar.error(b3Lang('purchasedProducts.footer.cantAddProductsNoSku'));
       }
       if (noSkuProducts.length === checkedArr.length) return;
 
@@ -377,15 +361,7 @@ function QuickOrderFooter(props: QuickOrderFooterProps) {
       isSuccess = validProductQty(newProducts);
 
       if (!isFondVariant) {
-        snackbar.error('', {
-          jsx: successTip({
-            message: errorMessage,
-            link: '',
-            linkText: '',
-            isOutLink: false,
-          }),
-          isClose: true,
-        });
+        snackbar.error(errorMessage);
 
         return;
       }
@@ -393,24 +369,22 @@ function QuickOrderFooter(props: QuickOrderFooterProps) {
       if (isSuccess) {
         await calculateProductListPrice(newProducts, '2');
         addQuoteDraftProducts(newProducts);
-        snackbar.success('', {
-          jsx: successTip({
-            message: b3Lang('purchasedProducts.footer.productsAddedToQuote'),
-            link: '/quoteDraft',
-            linkText: b3Lang('purchasedProducts.footer.viewQuote'),
-            isOutLink: false,
-          }),
-          isClose: true,
+        snackbar.success(b3Lang('purchasedProducts.footer.productsAddedToQuote'), {
+          action: {
+            label: b3Lang('purchasedProducts.footer.viewQuote'),
+            onClick: () => {
+              navigate('/quoteDraft');
+            },
+          },
         });
       } else {
-        snackbar.error('', {
-          jsx: successTip({
-            message: b3Lang('purchasedProducts.footer.productsLimit'),
-            link: '/quoteDraft',
-            linkText: b3Lang('purchasedProducts.footer.viewQuote'),
-            isOutLink: false,
-          }),
-          isClose: true,
+        snackbar.error(b3Lang('purchasedProducts.footer.productsLimit'), {
+          action: {
+            label: b3Lang('purchasedProducts.footer.viewQuote'),
+            onClick: () => {
+              navigate('/quoteDraft');
+            },
+          },
         });
       }
     } catch (e) {
@@ -424,33 +398,6 @@ function QuickOrderFooter(props: QuickOrderFooterProps) {
   const gotoShoppingDetail = (id: string | number) => {
     navigate(`/shoppingList/${id}`);
   };
-
-  const tip = (id: string | number) => (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-      }}
-    >
-      <Box
-        sx={{
-          mr: '15px',
-        }}
-      >
-        {b3Lang('purchasedProducts.footer.productsAddedToShoppingList')}
-      </Box>
-      <Button
-        onClick={() => gotoShoppingDetail(id)}
-        variant="text"
-        sx={{
-          color: '#ffffff',
-          padding: 0,
-        }}
-      >
-        view shopping list
-      </Button>
-    </Box>
-  );
 
   const handleShoppingClose = (isTrue?: boolean) => {
     if (isTrue) {
@@ -515,8 +462,10 @@ function QuickOrderFooter(props: QuickOrderFooterProps) {
       });
 
       snackbar.success(b3Lang('purchasedProducts.footer.productsAddedToShoppingList'), {
-        jsx: () => tip(shoppingListId),
-        isClose: true,
+        action: {
+          label: b3Lang('pdp.notification.viewShoppingList'),
+          onClick: () => gotoShoppingDetail(shoppingListId),
+        },
       });
       handleShoppingClose(true);
     } catch (err) {

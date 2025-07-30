@@ -116,7 +116,7 @@ describe('when a personal customer', () => {
       );
 
       when(getOrders)
-        .calledWith(stringContainingAll('isShowMy: "0"', 'first: 10', 'offset: 0'))
+        .calledWith(stringContainingAll('first: 10', 'offset: 0'))
         .thenReturn(buildGetCustomerOrdersWith('WHATEVER_VALUES'));
 
       renderWithProviders(<MyOrders />, { preloadedState });
@@ -616,7 +616,7 @@ describe('when a personal customer', () => {
 
       expect(within(dialog).getByRole('heading', { name: 'Filters' })).toBeInTheDocument();
 
-      await userEvent.click(within(dialog).getByRole('combobox'));
+      await userEvent.click(within(dialog).getByRole('combobox', { name: 'Order status' }));
 
       await userEvent.click(screen.getByRole('option', { name: 'Pending' }));
 
@@ -726,7 +726,7 @@ describe('when a personal customer', () => {
 
       expect(within(dialog).getByRole('heading', { name: 'Filters' })).toBeInTheDocument();
 
-      await userEvent.click(within(dialog).getByRole('combobox'));
+      await userEvent.click(within(dialog).getByRole('combobox', { name: 'Order status' }));
 
       await userEvent.click(screen.getByRole('option', { name: 'Awaiting' }));
 
@@ -868,6 +868,7 @@ describe('when a company customer', () => {
       );
 
       when(getAllOrders)
+        // isShowMy controls whether to show the orders for the current user, setting it to "1" will filter for currentUser
         .calledWith(stringContainingAll('isShowMy: "1"', 'first: 10', 'offset: 0'))
         .thenReturn(buildCompanyOrdersWith('WHATEVER_VALUES'));
 
@@ -895,6 +896,7 @@ describe('when a company customer', () => {
       );
 
       when(getAllOrders)
+        // isShowMy controls whether to show the orders for the current user, setting it to "1" will filter for currentUser
         .calledWith(stringContainingAll('isShowMy: "1"', 'first: 10', 'offset: 0'))
         .thenReturn(
           buildCompanyOrdersWith({
@@ -1375,7 +1377,7 @@ describe('when a company customer', () => {
 
       const dialog = await screen.findByRole('dialog', { name: 'Filters' });
 
-      await userEvent.click(within(dialog).getByRole('combobox'));
+      await userEvent.click(within(dialog).getByRole('combobox', { name: 'Order status' }));
 
       await userEvent.click(screen.getByRole('option', { name: 'Pending' }));
 
@@ -1481,7 +1483,7 @@ describe('when a company customer', () => {
 
       const dialog = await screen.findByRole('dialog', { name: 'Filters' });
 
-      await userEvent.click(within(dialog).getByRole('combobox'));
+      await userEvent.click(within(dialog).getByRole('combobox', { name: 'Order status' }));
 
       await userEvent.click(screen.getByRole('option', { name: 'Awaiting' }));
 
@@ -1601,6 +1603,7 @@ describe('when a customer is masquerading as a company customer', () => {
 
     when(getAllOrders)
       .calledWith(
+        // isShowMy controls whether to show the orders for the current user, setting it to "1" will filter for currentUser
         stringContainingAll('companyIds: [433,]', 'isShowMy: "1"', 'orderBy: "-bcOrderId"'),
       )
       .thenReturn(

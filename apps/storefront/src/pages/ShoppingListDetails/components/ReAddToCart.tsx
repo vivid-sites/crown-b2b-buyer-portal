@@ -4,7 +4,7 @@ import styled from '@emotion/styled';
 import { Delete } from '@mui/icons-material';
 import { Alert, Box, Grid, Typography } from '@mui/material';
 
-import { B3QuantityTextField, successTip } from '@/components';
+import { B3QuantityTextField } from '@/components';
 import B3Dialog from '@/components/B3Dialog';
 import CustomButton from '@/components/button/CustomButton';
 import B3Spin from '@/components/spin/B3Spin';
@@ -234,24 +234,22 @@ export default function ReAddToCart(props: ShoppingProductsProps) {
         ) {
           window.location.href = CHECKOUT_URL;
         } else {
-          snackbar.success('', {
-            jsx: successTip({
-              message: b3Lang('shoppingList.reAddToCart.productsAdded'),
-              link: CART_URL,
-              linkText: b3Lang('shoppingList.reAddToCart.viewCart'),
-              isOutLink: true,
-              isCustomEvent: true,
-            }),
-            isClose: true,
+          snackbar.success(b3Lang('shoppingList.reAddToCart.productsAdded'), {
+            action: {
+              label: b3Lang('shoppingList.reAddToCart.viewCart'),
+              onClick: () => {
+                if (window.b2b.callbacks.dispatchEvent('on-click-cart-button')) {
+                  window.location.href = CART_URL;
+                }
+              },
+            },
           });
           b3TriggerCartNumber();
         }
       }
 
       if (res.errors) {
-        snackbar.error(res.message, {
-          isClose: true,
-        });
+        snackbar.error(res.message);
       }
 
       b3TriggerCartNumber();

@@ -1,24 +1,25 @@
-import { ReactElement } from 'react';
 import { v1 as uuid } from 'uuid';
 
 import { AlertTip, MsgsProps } from '@/shared/dynamicallyVariable/context/config';
 
-interface SnackbarItemProps {
-  duration?: number;
-  jsx?: () => ReactElement;
-  isClose?: boolean;
+interface ToastOptions {
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
+  description?: string;
 }
 
 const getLocalHandler = (variant: AlertTip) => {
-  return (message: string, options?: SnackbarItemProps) => {
+  return (message: string, options?: ToastOptions) => {
     const msgs: Array<MsgsProps> = [
       {
-        isClose: options?.isClose || false,
         id: uuid(),
         type: variant,
         msg: message || `${variant} without any info.`,
-        jsx: options?.jsx,
+        action: options?.action,
         time: 5000,
+        description: options?.description,
       },
     ];
 
@@ -26,7 +27,7 @@ const getLocalHandler = (variant: AlertTip) => {
       type: 'tip',
       payload: {
         tipMessage: {
-          autoHideDuration: options?.duration || 5000,
+          autoHideDuration: 5000,
           msgs,
         },
       },
@@ -34,7 +35,7 @@ const getLocalHandler = (variant: AlertTip) => {
   };
 };
 
-export const snackbar = {
+export const snackbar = window.catalyst?.toast || {
   error: getLocalHandler('error'),
   success: getLocalHandler('success'),
   info: getLocalHandler('info'),
@@ -42,15 +43,15 @@ export const snackbar = {
 };
 
 const getGlobalHandler = (variant: AlertTip) => {
-  return (message: string, options?: SnackbarItemProps) => {
+  return (message: string, options?: ToastOptions) => {
     const msgs = [
       {
-        isClose: options?.isClose || false,
         id: uuid(),
         type: variant,
         msg: message || `${variant} without any info.`,
-        jsx: options?.jsx,
+        action: options?.action,
         time: 5000,
+        description: options?.description,
       },
     ];
 
@@ -58,7 +59,7 @@ const getGlobalHandler = (variant: AlertTip) => {
       type: 'globalTip',
       payload: {
         globalTipMessage: {
-          autoHideDuration: options?.duration || 5000,
+          autoHideDuration: 5000,
           msgs,
         },
       },
@@ -66,7 +67,7 @@ const getGlobalHandler = (variant: AlertTip) => {
   };
 };
 
-export const globalSnackbar = {
+export const globalSnackbar = window.catalyst?.toast || {
   error: getGlobalHandler('error'),
   success: getGlobalHandler('success'),
   info: getGlobalHandler('info'),
