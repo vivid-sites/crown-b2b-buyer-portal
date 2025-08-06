@@ -3,6 +3,7 @@ import failOnConsole from 'vitest-fail-on-console';
 
 import { Environment } from '@/types';
 
+import 'vitest-location-mock';
 import '@testing-library/jest-dom/vitest';
 
 vi.mock('@/store');
@@ -37,7 +38,7 @@ afterEach(() => {
 failOnConsole({
   silenceMessage: (message: string) => {
     // TODO: These warn in production, will have to be fixed in the future.
-    if (message.includes('ImmutableStateInvariantMiddleware')) {
+    if (message.includes('which is more than the warning threshold of')) {
       return true;
     }
 
