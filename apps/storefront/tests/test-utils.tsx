@@ -7,6 +7,7 @@ import { render, RenderOptions } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { Mock } from 'vitest';
 
+import { B3GlobalTip } from '@/components';
 import B3LayoutTip from '@/components/layout/B3LayoutTip';
 import { DynamicallyVariableProvider } from '@/shared/dynamicallyVariable';
 import { GlobalContext, GlobalProvider } from '@/shared/global';
@@ -84,6 +85,8 @@ export const renderWithProviders = (
                 <LangProvider>
                   <DynamicallyVariableProvider>
                     <B3LayoutTip />
+                    <B3GlobalTip />
+
                     <NavigationSpy spy={navigation}>{children}</NavigationSpy>
                   </DynamicallyVariableProvider>
                 </LangProvider>
@@ -105,8 +108,14 @@ export const renderWithProviders = (
 
 export function stringContainingAll(...substrings: string[]) {
   return {
-    asymmetricMatch(received: string) {
-      return substrings.every((sub) => received.includes(sub));
+    asymmetricMatch(received: unknown) {
+      return substrings.every((sub) => {
+        if (typeof received === 'string') {
+          return received.includes(sub);
+        }
+
+        return false;
+      });
     },
     toString() {
       return 'stringContainingAll';
