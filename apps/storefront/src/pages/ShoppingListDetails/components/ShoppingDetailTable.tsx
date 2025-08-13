@@ -30,6 +30,8 @@ import ChooseOptionsDialog from './ChooseOptionsDialog';
 import ShoppingDetailAddNotes from './ShoppingDetailAddNotes';
 import ShoppingDetailCard from './ShoppingDetailCard';
 
+import { setShoppingListItemQuantity } from '@/shared/service/vs/shoppingListQuantityService';
+
 interface ListItem {
   [key: string]: string;
 }
@@ -154,24 +156,24 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
     setDeleteOpen,
     isJuniorApprove,
     isB2BUser,
-    allowJuniorPlaceOrder,
-    productQuoteEnabled,
+    //allowJuniorPlaceOrder,
+    //productQuoteEnabled,
     isCanEditShoppingList,
-    role,
+    //role,
   } = props;
 
-  const showInclusiveTaxPrice = useAppSelector(({ global }) => global.showInclusiveTaxPrice);
+  //const showInclusiveTaxPrice = useAppSelector(({ global }) => global.showInclusiveTaxPrice);
 
-  const { shoppingListCreateActionsPermission, submitShoppingListPermission } =
+  const { shoppingListCreateActionsPermission/*, submitShoppingListPermission */} =
     useAppSelector(rolePermissionSelector);
 
   const canShoppingListActions = isB2BUser
     ? shoppingListCreateActionsPermission && isCanEditShoppingList
     : true;
   const b2bAndBcShoppingListActionsPermissions = isB2BUser ? canShoppingListActions : true;
-  const b2bSubmitShoppingListPermission = isB2BUser
-    ? submitShoppingListPermission
-    : Number(role) === 2;
+  // const b2bSubmitShoppingListPermission = isB2BUser
+  //    ? submitShoppingListPermission
+  //    : Number(role) === 2;
 
   const paginationTableRef = useRef<PaginationTableRefProps | null>(null);
 
@@ -183,14 +185,14 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
   });
   const [qtyNotChangeFlag, setQtyNotChangeFlag] = useState<boolean>(true);
   const [originProducts, setOriginProducts] = useState<ListItemProps[]>([]);
-  const [shoppingListTotalPrice, setShoppingListTotalPrice] = useState<number>(0.0);
+  //const [shoppingListTotalPrice, setShoppingListTotalPrice] = useState<number>(0.0);
 
   const [addNoteOpen, setAddNoteOpen] = useState<boolean>(false);
   const [addNoteItemId, setAddNoteItemId] = useState<number | string>('');
   const [notes, setNotes] = useState<string>('');
-  const [disabledSelectAll, setDisabledSelectAll] = useState<boolean>(false);
+  //const [disabledSelectAll, setDisabledSelectAll] = useState<boolean>(false);
 
-  const [priceHidden, setPriceHidden] = useState<boolean>(false);
+  //const [priceHidden, setPriceHidden] = useState<boolean>(false);
 
   const [handleSetOrderBy, order, orderBy] = useSort(sortKeys, defaultSortKey, search, setSearch);
 
@@ -201,6 +203,8 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
 
       return node.id === id;
     });
+
+    // TODO: modify checkedArr here to add/remove product
 
     const currentQty = currentItem?.node?.quantity || '';
     setQtyNotChangeFlag(Number(currentQty) === Number(value));
@@ -216,10 +220,10 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
       return item;
     });
 
-    const nonNumberProducts = newListItems.filter(
-      (item: ListItemProps) => Number(item.node.quantity) === 0,
-    );
-    setDisabledSelectAll(nonNumberProducts.length === newListItems.length);
+    //const nonNumberProducts = newListItems.filter(
+    //  (item: ListItemProps) => Number(item.node.quantity) === 0,
+    //);
+    //setDisabledSelectAll(nonNumberProducts.length === newListItems.length);
     paginationTableRef.current?.setList([...newListItems]);
   };
 
@@ -270,6 +274,12 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
       };
 
       await updateShoppingListItem(data);
+
+      // Update the quantity in sessionStorage
+      if(editProductItemId) {
+        setShoppingListItemQuantity(shoppingListId, editProductItemId, products[0].quantity);
+      }
+
       setSelectedOptionsOpen(false);
       setEditProductItemId('');
       snackbar.success(b3Lang('shoppingList.table.productUpdated'));
@@ -317,6 +327,9 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
     const updateShoppingListItem = isB2BUser
       ? updateB2BShoppingListsItem
       : updateBcShoppingListsItem;
+
+    // Update the quantity in sessionStorage
+    setShoppingListItemQuantity(shoppingListId, itemId, itemData.quantity);
 
     await updateShoppingListItem(data);
   };
@@ -376,37 +389,37 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
     if (shoppingListInfo) {
       const {
         products: { edges },
-        grandTotal,
-        totalTax,
+        //grandTotal,
+        //totalTax,
       } = shoppingListInfo;
 
-      const NewShoppingListTotalPrice = showInclusiveTaxPrice
-        ? Number(grandTotal)
-        : Number(grandTotal) - Number(totalTax) || 0.0;
+      // const NewShoppingListTotalPrice = showInclusiveTaxPrice
+      //   ? Number(grandTotal)
+      //   : Number(grandTotal) - Number(totalTax) || 0.0;
 
-      const isPriceHidden = edges.some((item: CustomFieldItems) => {
-        if (item?.node?.productsSearch) {
-          return item.node.productsSearch?.isPriceHidden || false;
-        }
+      // const isPriceHidden = edges.some((item: CustomFieldItems) => {
+      //   if (item?.node?.productsSearch) {
+      //     return item.node.productsSearch?.isPriceHidden || false;
+      //   }
 
-        return false;
-      });
+      //   return false;
+      // });
 
-      setPriceHidden(isPriceHidden);
+      //setPriceHidden(isPriceHidden);
       setOriginProducts(cloneDeep(edges));
-      setShoppingListTotalPrice(NewShoppingListTotalPrice);
+      //setShoppingListTotalPrice(NewShoppingListTotalPrice);
     }
-  }, [shoppingListInfo, showInclusiveTaxPrice]);
+  }, [shoppingListInfo/*, showInclusiveTaxPrice*/]);
 
-  useEffect(() => {
-    if (shoppingListInfo) {
-      const {
-        products: { edges },
-      } = shoppingListInfo;
-      const nonNumberProducts = edges.filter((item: ListItemProps) => item.node.quantity === 0);
-      setDisabledSelectAll(nonNumberProducts.length === edges.length);
-    }
-  }, [shoppingListInfo]);
+  // useEffect(() => {
+  //   if (shoppingListInfo) {
+  //     const {
+  //       products: { edges },
+  //     } = shoppingListInfo;
+  //     const nonNumberProducts = edges.filter((item: ListItemProps) => item.node.quantity === 0);
+  //     setDisabledSelectAll(nonNumberProducts.length === edges.length);
+  //   }
+  // }, [shoppingListInfo]);
 
   const showPrice = (price: string, row: CustomFieldItems): string | number => {
     const {
@@ -714,13 +727,6 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
             quantity: shoppingListInfo?.products?.totalCount || 0,
           })}
         </Typography>
-        <Typography
-          sx={{
-            fontSize: '24px',
-          }}
-        >
-          {priceHidden ? '' : currencyFormat(shoppingListTotalPrice || 0.0)}
-        </Typography>
       </Box>
       <Box
         sx={{
@@ -742,15 +748,8 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
         getRequestList={getShoppingListDetails}
         searchParams={search}
         isCustomRender={false}
-        showCheckbox
-        showSelectAllCheckbox
-        applyAllDisableCheckbox={false}
-        disableCheckbox={
-          disabledSelectAll ||
-          (b2bSubmitShoppingListPermission
-            ? !(allowJuniorPlaceOrder || productQuoteEnabled)
-            : (isReadForApprove || isJuniorApprove) && b2bAndBcShoppingListActionsPermissions)
-        }
+        showCheckbox={false}
+        showSelectAllCheckbox={false}
         hover
         labelRowsPerPage={b3Lang('shoppingList.table.itemsPerPage')}
         showBorder={false}

@@ -49,6 +49,8 @@ import {
   ShoppingListDetailsProvider,
 } from './context/ShoppingListDetailsContext';
 
+import { getShoppingListItemQuantity } from '@/shared/service/vs/shoppingListQuantityService';
+
 interface TableRefProps extends HTMLInputElement {
   initSearch: () => void;
 }
@@ -111,10 +113,17 @@ function useData() {
     return conversionProductsList(productsSearch);
   };
 
-  const getShoppingList = (params: SearchProps) => {
+  const getShoppingList = async (params: SearchProps) => {
     const options = { ...params, id };
 
-    return isB2BUser ? getB2BShoppingListDetails(options) : getBcShoppingListDetails(options);
+    let shoppingListDetails = isB2BUser ? await getB2BShoppingListDetails(options) : await getBcShoppingListDetails(options);
+
+    // fetch the quantity from sessionStorage and add it to the edges
+    for(let edge of shoppingListDetails.products.edges) {
+      edge.node.quantity = getShoppingListItemQuantity(id, edge.node.id);
+    };
+
+    return shoppingListDetails;
   };
 
   const deleteShoppingListItem = (itemId: string | number) => {
@@ -199,6 +208,7 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
 
     return submitShoppingListPermission;
   }, [submitShoppingListPermission, isB2BUser, shoppingListInfo]);
+  
   const b2bSubmitShoppingListPermission = isB2BUser
     ? submitShoppingList
     : role === CustomerRole.JUNIOR_BUYER;
