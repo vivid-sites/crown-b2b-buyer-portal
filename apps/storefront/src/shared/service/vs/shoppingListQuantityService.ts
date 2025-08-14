@@ -8,3 +8,12 @@ export const setShoppingListItemQuantity = (shoppingListId: string |number, item
 	quantities[itemId] = quantity;
 	sessionStorage.setItem(`quantities_${shoppingListId}`, JSON.stringify(quantities));
 };
+
+export const clearShoppingListItemQuantities = () => {
+	for(let i = 0; i < sessionStorage.length; i++) {
+		const key = sessionStorage.key(i);
+		if(key && key.startsWith('quantities_')) {
+			sessionStorage.removeItem(key);
+		}
+	}
+}

@@ -14,7 +14,7 @@ import { Box, Grid, styled, TextField, Typography } from '@mui/material';
 import cloneDeep from 'lodash-es/cloneDeep';
 
 import { B3PaginationTable, GetRequestList } from '@/components/table/B3PaginationTable';
-import { TableColumnItem } from '@/components/table/B3Table';
+import { TableColumnItem, WithRowControls } from '@/components/table/B3Table';
 import { PRODUCT_DEFAULT_IMAGE } from '@/constants';
 import { useMobile, useSort } from '@/hooks';
 import { updateB2BShoppingListsItem, updateBcShoppingListsItem } from '@/shared/service/b2b';
@@ -29,8 +29,6 @@ import B3FilterSearch from '../../../components/filter/B3FilterSearch';
 import ChooseOptionsDialog from './ChooseOptionsDialog';
 import ShoppingDetailAddNotes from './ShoppingDetailAddNotes';
 import ShoppingDetailCard from './ShoppingDetailCard';
-
-import { setShoppingListItemQuantity } from '@/shared/service/vs/shoppingListQuantityService';
 
 interface ListItem {
   [key: string]: string;
@@ -69,7 +67,7 @@ interface ShoppingDetailTableProps {
   setIsRequestLoading: Dispatch<SetStateAction<boolean>>;
   shoppingListId: number | string;
   getShoppingListDetails: GetRequestList<SearchProps, CustomFieldItems>;
-  setCheckedArr: (values: CustomFieldItems) => void;
+  handleUpdateItemQuantity: (values: CustomFieldItems) => void;
   isReadForApprove: boolean;
   isJuniorApprove: boolean;
   allowJuniorPlaceOrder: boolean;
@@ -132,12 +130,14 @@ const StyledTextField = styled(TextField)(() => ({
   },
 }));
 
-const defaultSortKey = 'updatedAt';
+const defaultSortKey = 'Product';
 
 const sortKeys = {
   Product: 'productName',
   updatedAt: 'updatedAt',
   Qty: 'quantity',
+  Sku: 'productSku',
+  SortOrder: 'sortOrder',
 };
 
 function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>) {
@@ -150,7 +150,7 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
     setIsRequestLoading,
     shoppingListId,
     getShoppingListDetails,
-    setCheckedArr,
+    handleUpdateItemQuantity,
     isReadForApprove,
     setDeleteItemId,
     setDeleteOpen,
@@ -181,7 +181,7 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
   const [optionsProduct, setOptionsProduct] = useState<any>(null);
   const [editProductItemId, setEditProductItemId] = useState<number | string | null>(null);
   const [search, setSearch] = useState<SearchProps>({
-    orderBy: `-${sortKeys[defaultSortKey]}`,
+    orderBy: `${sortKeys[defaultSortKey]}`,
   });
   const [qtyNotChangeFlag, setQtyNotChangeFlag] = useState<boolean>(true);
   const [originProducts, setOriginProducts] = useState<ListItemProps[]>([]);
@@ -197,24 +197,24 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
   const [handleSetOrderBy, order, orderBy] = useSort(sortKeys, defaultSortKey, search, setSearch);
 
   const handleUpdateProductQty = (id: number | string, value: number | string) => {
-    if (Number(value) < 0) return;
+    let newQty = Number(value);
+    
+    if (isNaN(newQty) || newQty < 0) return;
     const currentItem = originProducts.find((item: ListItemProps) => {
       const { node } = item;
 
       return node.id === id;
     });
 
-    // TODO: modify checkedArr here to add/remove product
-
     const currentQty = currentItem?.node?.quantity || '';
-    setQtyNotChangeFlag(Number(currentQty) === Number(value));
+    setQtyNotChangeFlag(Number(currentQty) === newQty);
 
     const listItems: ListItemProps[] = paginationTableRef.current?.getList() || [];
     const newListItems = listItems?.map((item: ListItemProps) => {
       const { node } = item;
       if (node?.id === id) {
-        node.quantity = `${Number(value)}`;
-        node.disableCurrentCheckbox = Number(value) === 0;
+        node.quantity = `${newQty}`;
+        node.disableCurrentCheckbox = newQty === 0;
       }
 
       return item;
@@ -277,7 +277,7 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
 
       // Update the quantity in sessionStorage
       if(editProductItemId) {
-        setShoppingListItemQuantity(shoppingListId, editProductItemId, products[0].quantity);
+        handleUpdateItemQuantity({ shoppingListId, itemId: editProductItemId, currentNode: products[0], quantity: products[0].quantity });
       }
 
       setSelectedOptionsOpen(false);
@@ -329,7 +329,7 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
       : updateBcShoppingListsItem;
 
     // Update the quantity in sessionStorage
-    setShoppingListItemQuantity(shoppingListId, itemId, itemData.quantity);
+    handleUpdateItemQuantity({ shoppingListId, itemId, currentNode, quantity: itemData.quantity });
 
     await updateShoppingListItem(data);
   };
@@ -347,25 +347,25 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
     }
   };
 
-  const getSelectCheckbox = (selectCheckbox: Array<string | number>) => {
-    if (selectCheckbox.length > 0) {
-      const productList = paginationTableRef.current?.getList() || [];
-      const checkedItems: CustomFieldItems[] = [];
-      selectCheckbox.forEach((item: number | string) => {
-        const newItems = productList.find((product: ListItemProps) => {
-          const { node } = product;
+  // const getSelectCheckbox = (selectCheckbox: Array<string | number>) => {
+  //   if (selectCheckbox.length > 0) {
+  //     const productList = paginationTableRef.current?.getList() || [];
+  //     const checkedItems: CustomFieldItems[] = [];
+  //     selectCheckbox.forEach((item: number | string) => {
+  //       const newItems = productList.find((product: ListItemProps) => {
+  //         const { node } = product;
 
-          return node.id === item;
-        });
+  //         return node.id === item;
+  //       });
 
-        if (newItems) checkedItems.push(newItems);
-      });
+  //       if (newItems) checkedItems.push(newItems);
+  //     });
 
-      setCheckedArr([...checkedItems]);
-    } else {
-      setCheckedArr([]);
-    }
-  };
+  //     setCheckedArr([...checkedItems]);
+  //   } else {
+  //     setCheckedArr([]);
+  //   }
+  // };
 
   const handleCancelAddNotesClick = () => {
     setAddNoteOpen(false);
@@ -708,6 +708,10 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
     },
   ];
 
+  const selectedDelegate = (node: WithRowControls<CustomFieldItems>) => {
+    return node.quantity > 0;
+  };
+
   return (
     <StyledShoppingListTableContainer>
       <Box
@@ -754,13 +758,14 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
         labelRowsPerPage={b3Lang('shoppingList.table.itemsPerPage')}
         showBorder={false}
         requestLoading={setIsRequestLoading}
-        getSelectCheckbox={getSelectCheckbox}
+        //getSelectCheckbox={getSelectCheckbox}
         itemIsMobileSpacing={0}
         noDataText={b3Lang('shoppingList.table.noProductsFound')}
         sortDirection={order}
         orderBy={orderBy}
         sortByFn={handleSetOrderBy}
         pageType="shoppingListDetailsTable"
+        selectedDelegate={selectedDelegate}
         renderItem={(row, index, checkBox) => (
           <ShoppingDetailCard
             len={shoppingListInfo?.products?.edges.length || 0}

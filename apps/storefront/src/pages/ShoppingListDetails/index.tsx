@@ -49,7 +49,7 @@ import {
   ShoppingListDetailsProvider,
 } from './context/ShoppingListDetailsContext';
 
-import { getShoppingListItemQuantity } from '@/shared/service/vs/shoppingListQuantityService';
+import { getShoppingListItemQuantity, setShoppingListItemQuantity } from '@/shared/service/vs/shoppingListQuantityService';
 
 interface TableRefProps extends HTMLInputElement {
   initSearch: () => void;
@@ -175,7 +175,7 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
 
   const tableRef = useRef<TableRefProps | null>(null);
 
-  const [checkedArr, setCheckedArr] = useState<CustomFieldItems>([]);
+  const [checkedArr, setCheckedArr] = useState<ListItemProps[]>([]);
   const [shoppingListInfo, setShoppingListInfo] = useState<null | ShoppingListInfoProps>(null);
   const [customerInfo, setCustomerInfo] = useState<null | CustomerInfoProps>(null);
   const [isRequestLoading, setIsRequestLoading] = useState(false);
@@ -279,6 +279,19 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
     return [];
   };
 
+  const addItemToCheckedArr = (product: ListItemProps) => {
+    setCheckedArr(oldArray => {
+      const newArray = [...oldArray];
+      const existingItem = newArray.find((item: ListItemProps) => item.node.id === product.node.id);
+      if(existingItem) {
+        existingItem.node.quantity = product.node.quantity;
+      } else {
+        newArray.push(product);
+      }
+      return newArray;
+    });
+}
+
   const getShoppingListDetails = async (params: SearchProps) => {
     const shoppingListDetailInfo = await getShoppingList(params);
 
@@ -299,6 +312,14 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
         totalCount: 0,
       };
     }
+
+    for(let edge of listProducts) {
+      console.log('getShoppingListDetails', edge.node);
+      const qty = Number(edge.node.quantity);
+      if(!isNaN(qty) && qty > 0) {
+        addItemToCheckedArr(edge);
+      }
+    };
 
     return {
       edges: listProducts,
@@ -342,6 +363,20 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
     setDeleteOpen(false);
     setDeleteItemId('');
   };
+
+  const handleUpdateItemQuantity = (itemData: CustomFieldItems) => {
+    const { shoppingListId, itemId, quantity, currentNode } = itemData;
+
+    setShoppingListItemQuantity(shoppingListId, itemId, quantity);
+
+    // Update checkedArr based on quantity
+    currentNode.quantity = quantity;
+    if(quantity === 0) {
+      setCheckedArr(oldArray => oldArray.filter((item: ListItemProps) => item.node.id !== currentNode.id));
+    } else {
+      addItemToCheckedArr(currentNode);
+    }
+  }
 
   const handleDeleteItems = async (itemId: number | string = '') => {
     setIsRequestLoading(true);
@@ -477,7 +512,7 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
                   isReadForApprove={isReadForApprove}
                   isJuniorApprove={isJuniorApprove}
                   allowJuniorPlaceOrder={allowJuniorPlaceOrder}
-                  setCheckedArr={setCheckedArr}
+                  handleUpdateItemQuantity={handleUpdateItemQuantity}
                   shoppingListInfo={shoppingListInfo}
                   isRequestLoading={isRequestLoading}
                   setIsRequestLoading={setIsRequestLoading}

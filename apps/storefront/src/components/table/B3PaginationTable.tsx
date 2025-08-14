@@ -78,6 +78,7 @@ interface B3PaginationTableProps<GetRequestListParams, Row extends object> {
   orderBy?: string;
   pageType?: string;
   isAutoRefresh?: boolean;
+  selectedDelegate?: (node: WithRowControls<Row>) => boolean;
 }
 
 function PaginationTable<GetRequestListParams, Row extends object>(
@@ -115,6 +116,7 @@ function PaginationTable<GetRequestListParams, Row extends object>(
     orderBy = '',
     pageType = '',
     isAutoRefresh = true,
+    selectedDelegate,
   }: B3PaginationTableProps<GetRequestListParams, Row>,
   ref?: Ref<unknown>,
 ) {
@@ -413,6 +415,7 @@ function PaginationTable<GetRequestListParams, Row extends object>(
       sortDirection={sortDirection}
       sortByFn={sortByFn}
       orderBy={orderBy}
+      selectedDelegate={selectedDelegate}
     />
   );
 }
