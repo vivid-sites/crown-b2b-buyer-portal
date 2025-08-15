@@ -1,12 +1,11 @@
-export const getShoppingListItemQuantity = (shoppingListId: string |number, itemId: string | number) => {
-	const quantities = JSON.parse(sessionStorage.getItem(`quantities_${shoppingListId}`) || '{}');
-	return quantities[itemId] || 0;
+import { ListItemProps } from '@/utils/b3Product/shared/config';
+
+export const getShoppingListItemQuantities = (shoppingListId: string |number) => {
+	return JSON.parse(sessionStorage.getItem(`quantities_${shoppingListId}`) || '[]');
 };
 
-export const setShoppingListItemQuantity = (shoppingListId: string |number, itemId: string | number, quantity: number) => {
-	var quantities = JSON.parse(sessionStorage.getItem(`quantities_${shoppingListId}`) || '{}');
-	quantities[itemId] = quantity;
-	sessionStorage.setItem(`quantities_${shoppingListId}`, JSON.stringify(quantities));
+export const setShoppingListItemQuantities = (shoppingListId: string |number, items: ListItemProps[]) => {
+	sessionStorage.setItem(`quantities_${shoppingListId}`, JSON.stringify(items));
 };
 
 export const clearShoppingListItemQuantities = () => {

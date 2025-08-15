@@ -49,7 +49,7 @@ import {
   ShoppingListDetailsProvider,
 } from './context/ShoppingListDetailsContext';
 
-import { getShoppingListItemQuantity, setShoppingListItemQuantity } from '@/shared/service/vs/shoppingListQuantityService';
+import { getShoppingListItemQuantities, setShoppingListItemQuantities } from '@/shared/service/vs/shoppingListQuantityService';
 
 interface TableRefProps extends HTMLInputElement {
   initSearch: () => void;
@@ -117,10 +117,12 @@ function useData() {
     const options = { ...params, id };
 
     let shoppingListDetails = isB2BUser ? await getB2BShoppingListDetails(options) : await getBcShoppingListDetails(options);
+    const quantities = getShoppingListItemQuantities(id);
 
     // fetch the quantity from sessionStorage and add it to the edges
     for(let edge of shoppingListDetails.products.edges) {
-      edge.node.quantity = getShoppingListItemQuantity(id, edge.node.id);
+      const quantity = quantities.find((q: ListItemProps) => q.node.id === edge.node.id);
+      edge.node.quantity = quantity?.node.quantity || 0;
     };
 
     return shoppingListDetails;
@@ -175,7 +177,10 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
 
   const tableRef = useRef<TableRefProps | null>(null);
 
-  const [checkedArr, setCheckedArr] = useState<ListItemProps[]>([]);
+  const [checkedArr, setCheckedArr] = useState<ListItemProps[]>(() => {
+    const quantities = getShoppingListItemQuantities(id);
+    return quantities.map((q: ListItemProps) => ({node: q.node}));
+  });
   const [shoppingListInfo, setShoppingListInfo] = useState<null | ShoppingListInfoProps>(null);
   const [customerInfo, setCustomerInfo] = useState<null | CustomerInfoProps>(null);
   const [isRequestLoading, setIsRequestLoading] = useState(false);
@@ -279,6 +284,10 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
     return [];
   };
 
+  useEffect(() => {
+    setShoppingListItemQuantities(id, checkedArr);
+  }, [checkedArr]);
+
   const addItemToCheckedArr = (product: ListItemProps) => {
     setCheckedArr(oldArray => {
       const newArray = [...oldArray];
@@ -290,7 +299,7 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
       }
       return newArray;
     });
-}
+  }
 
   const getShoppingListDetails = async (params: SearchProps) => {
     const shoppingListDetailInfo = await getShoppingList(params);
@@ -314,7 +323,6 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
     }
 
     for(let edge of listProducts) {
-      console.log('getShoppingListDetails', edge.node);
       const qty = Number(edge.node.quantity);
       if(!isNaN(qty) && qty > 0) {
         addItemToCheckedArr(edge);
@@ -365,16 +373,14 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
   };
 
   const handleUpdateItemQuantity = (itemData: CustomFieldItems) => {
-    const { shoppingListId, itemId, quantity, currentNode } = itemData;
-
-    setShoppingListItemQuantity(shoppingListId, itemId, quantity);
+    const { quantity, currentNode } = itemData;
 
     // Update checkedArr based on quantity
     currentNode.quantity = quantity;
     if(quantity === 0) {
       setCheckedArr(oldArray => oldArray.filter((item: ListItemProps) => item.node.id !== currentNode.id));
     } else {
-      addItemToCheckedArr(currentNode);
+      addItemToCheckedArr({node: currentNode});
     }
   }
 

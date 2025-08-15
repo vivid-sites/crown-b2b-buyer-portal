@@ -329,7 +329,7 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
       : updateBcShoppingListsItem;
 
     // Update the quantity in sessionStorage
-    handleUpdateItemQuantity({ shoppingListId, itemId, currentNode, quantity: itemData.quantity });
+    handleUpdateItemQuantity({ currentNode, quantity: itemData.quantity });
 
     await updateShoppingListItem(data);
   };
