@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { useB3Lang } from '@b3/lang';
 import { Delete, Edit, StickyNote2 } from '@mui/icons-material';
-import { Box, Grid, styled, TextField, Typography } from '@mui/material';
+import { Box, Button, Grid, styled, TextField, Typography } from '@mui/material';
 import cloneDeep from 'lodash-es/cloneDeep';
 
 import { B3PaginationTable, GetRequestList } from '@/components/table/B3PaginationTable';
@@ -29,6 +29,8 @@ import B3FilterSearch from '../../../components/filter/B3FilterSearch';
 import ChooseOptionsDialog from './ChooseOptionsDialog';
 import ShoppingDetailAddNotes from './ShoppingDetailAddNotes';
 import ShoppingDetailCard from './ShoppingDetailCard';
+
+import { getShoppingListItemQuantities } from '@/shared/service/vs/shoppingListQuantityService';
 
 interface ListItem {
   [key: string]: string;
@@ -68,6 +70,8 @@ interface ShoppingDetailTableProps {
   shoppingListId: number | string;
   getShoppingListDetails: GetRequestList<SearchProps, CustomFieldItems>;
   handleUpdateItemQuantity: (values: CustomFieldItems) => void;
+  disabledResetQuantities: boolean;
+  handleResetQuantities: () => void;
   isReadForApprove: boolean;
   isJuniorApprove: boolean;
   allowJuniorPlaceOrder: boolean;
@@ -151,6 +155,8 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
     shoppingListId,
     getShoppingListDetails,
     handleUpdateItemQuantity,
+    disabledResetQuantities,
+    handleResetQuantities,
     isReadForApprove,
     setDeleteItemId,
     setDeleteOpen,
@@ -434,6 +440,17 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
     });
   };
 
+  const selectedDelegate = (node: WithRowControls<CustomFieldItems>) => {
+    return node.quantity > 0;
+  };
+
+  function handleResetQuantitiesInternal() {
+    if(handleResetQuantities){
+      handleResetQuantities();
+      paginationTableRef.current?.refresh();
+    }
+  }
+
   const columnItems: TableColumnItem<ListItem>[] = [
     {
       key: 'Product',
@@ -708,10 +725,6 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
     },
   ];
 
-  const selectedDelegate = (node: WithRowControls<CustomFieldItems>) => {
-    return node.quantity > 0;
-  };
-
   return (
     <StyledShoppingListTableContainer>
       <Box
@@ -732,17 +745,40 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
           })}
         </Typography>
       </Box>
+      <Grid container spacing={2} alignItems="center">
+        <Grid item sx={{flex: '1 1 auto'}}>
+            <B3FilterSearch
+              searchBGColor="rgba(0, 0, 0, 0.06)"
+              handleChange={(e) => {
+                handleSearchProduct(e);
+              }}
+            />
+        </Grid>
+        <Grid item>
+            <Button
+              variant="contained"
+              sx={{
+                whiteSpace: 'nowrap',
+                padding: '0.5rem 1rem',
+                minWidth: 'auto',
+              }}
+              disabled={disabledResetQuantities}
+              onClick={() => {
+                handleResetQuantitiesInternal();
+              }}
+            >
+              {b3Lang('shoppingList.table.resetQuantities')}
+            </Button>
+        </Grid>
+      </Grid>
       <Box
         sx={{
           marginBottom: '5px',
-        }}
+          display: 'flex',
+          justifyContent: 'space-between',
+          width: '100%',
+      }}
       >
-        <B3FilterSearch
-          searchBGColor="rgba(0, 0, 0, 0.06)"
-          handleChange={(e) => {
-            handleSearchProduct(e);
-          }}
-        />
       </Box>
 
       <B3PaginationTable

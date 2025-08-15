@@ -184,6 +184,7 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
   const [shoppingListInfo, setShoppingListInfo] = useState<null | ShoppingListInfoProps>(null);
   const [customerInfo, setCustomerInfo] = useState<null | CustomerInfoProps>(null);
   const [isRequestLoading, setIsRequestLoading] = useState(false);
+  const [disabledResetQuantities, setDisabledResetQuantities] = useState<boolean>(true);
 
   const [deleteOpen, setDeleteOpen] = useState<boolean>(false);
   const [deleteItemId, setDeleteItemId] = useState<number | string>('');
@@ -286,6 +287,7 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
 
   useEffect(() => {
     setShoppingListItemQuantities(id, checkedArr);
+    setDisabledResetQuantities(checkedArr.length === 0);
   }, [checkedArr]);
 
   const addItemToCheckedArr = (product: ListItemProps) => {
@@ -299,6 +301,10 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
       }
       return newArray;
     });
+  }
+
+  const handleResetQuantities = () => {
+    setCheckedArr([]);
   }
 
   const getShoppingListDetails = async (params: SearchProps) => {
@@ -519,6 +525,8 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
                   isJuniorApprove={isJuniorApprove}
                   allowJuniorPlaceOrder={allowJuniorPlaceOrder}
                   handleUpdateItemQuantity={handleUpdateItemQuantity}
+                  disabledResetQuantities={disabledResetQuantities}
+                  handleResetQuantities={handleResetQuantities}
                   shoppingListInfo={shoppingListInfo}
                   isRequestLoading={isRequestLoading}
                   setIsRequestLoading={setIsRequestLoading}
