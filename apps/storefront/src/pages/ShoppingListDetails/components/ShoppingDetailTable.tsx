@@ -30,8 +30,6 @@ import ChooseOptionsDialog from './ChooseOptionsDialog';
 import ShoppingDetailAddNotes from './ShoppingDetailAddNotes';
 import ShoppingDetailCard from './ShoppingDetailCard';
 
-import { getShoppingListItemQuantities } from '@/shared/service/vs/shoppingListQuantityService';
-
 interface ListItem {
   [key: string]: string;
 }

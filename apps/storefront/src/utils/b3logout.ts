@@ -4,8 +4,11 @@ import { clearCompanySlice } from '@/store/slices/company';
 import b2bVerifyBcLoginStatus from './b2bVerifyBcLoginStatus';
 import b2bLogger from './b3Logger';
 
+import { clearShoppingListItemQuantities } from '@/shared/service/vs/shoppingListQuantityService';
+
 export const logoutSession = () => {
   store.dispatch(clearCompanySlice());
+  clearShoppingListItemQuantities();
 };
 
 export const isB2bTokenPage = (gotoUrl?: string) => {

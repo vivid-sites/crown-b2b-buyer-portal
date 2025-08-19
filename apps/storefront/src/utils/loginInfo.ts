@@ -37,6 +37,8 @@ import b2bLogger from './b3Logger';
 import { B3LStorage, B3SStorage } from './b3Storage';
 import { channelId, storeHash } from './basicConfig';
 
+import { clearShoppingListItemQuantities } from '@/shared/service/vs/shoppingListQuantityService';
+
 const { VITE_IS_LOCAL_ENVIRONMENT } = import.meta.env;
 
 interface ChannelIdProps {
@@ -136,6 +138,7 @@ export const clearCurrentCustomerInfo = async () => {
   sessionStorage.removeItem('b2b-blockPendingAccountOrderCreation');
   store.dispatch(clearCompanySlice());
   store.dispatch(clearMasqueradeCompany());
+  clearShoppingListItemQuantities();
 };
 
 // companyStatus
@@ -394,6 +397,8 @@ export const getCurrentCustomerInfo = async (
       B3SStorage.set('isB2BUser', isB2BUser);
       B3LStorage.set('cartToQuoteId', '');
 
+      clearShoppingListItemQuantities();
+      
       return {
         role,
         userType,

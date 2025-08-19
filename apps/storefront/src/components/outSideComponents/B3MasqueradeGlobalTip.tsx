@@ -25,6 +25,8 @@ import { clearMasqueradeCompany, setCartNumber, useAppDispatch, useAppSelector }
 
 import { ConfirmMasqueradeDialog } from '../ConfirmMasqueradeDialog';
 
+import { clearShoppingListItemQuantities } from '@/shared/service/vs/shoppingListQuantityService';
+
 import {
   getContrastColor,
   getLocation,
@@ -122,6 +124,7 @@ export default function B3MasqueradeGlobalTip(props: B3MasqueradeGlobalTipProps)
 
     setIsLoading(false);
     dispatch(clearMasqueradeCompany());
+    clearShoppingListItemQuantities();
     setOpenPage({
       isOpen: true,
       openUrl: '/dashboard',
