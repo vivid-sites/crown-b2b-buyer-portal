@@ -114,7 +114,10 @@ const StyledShoppingListTableContainer = styled('div')(() => ({
     '& tr: hover': {
       '& #shoppingList-actionList': {
         opacity: 1,
-      },
+      }
+    },
+    '& tr.Mui-selected': {
+      border: '2px solid #1976D2'
     },
   },
 }));
