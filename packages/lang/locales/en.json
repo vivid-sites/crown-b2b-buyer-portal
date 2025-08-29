@@ -499,6 +499,7 @@
   "shoppingList.table.totalProductCount": "{quantity} products",
   "shoppingList.table.itemsPerPage": "Items per page",
   "shoppingList.table.noProductsFound": "No products found",
+  "shoppingList.table.resetQuantities": "Clear Quantities",
   "shoppingList.shoppingDetailCard.price": "Price: {price}",
   "shoppingList.shoppingDetailCard.quantity": "qty",
   "shoppingList.shoppingDetailCard.total": "Total: {total}",

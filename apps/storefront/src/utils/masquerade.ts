@@ -5,6 +5,8 @@ import {
 } from '@/shared/service/b2b';
 import { AppStore, clearMasqueradeCompany, MasqueradeCompany, setMasqueradeCompany } from '@/store';
 
+import { clearShoppingListItemQuantities } from '@/shared/service/vs/shoppingListQuantityService';
+
 interface StartMasqueradeParams {
   companyId: number;
   customerId: string | number;
@@ -43,4 +45,6 @@ export const endMasquerade = async (store: AppStore) => {
   await superAdminEndMasquerade(salesRepCompanyId);
 
   store.dispatch(clearMasqueradeCompany());
+
+  clearShoppingListItemQuantities();
 };

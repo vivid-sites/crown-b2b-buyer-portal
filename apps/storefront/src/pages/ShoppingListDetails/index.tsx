@@ -49,6 +49,8 @@ import {
   ShoppingListDetailsProvider,
 } from './context/ShoppingListDetailsContext';
 
+import { getShoppingListItemQuantities, setShoppingListItemQuantities } from '@/shared/service/vs/shoppingListQuantityService';
+
 interface TableRefProps extends HTMLInputElement {
   initSearch: () => void;
 }
@@ -111,10 +113,19 @@ function useData() {
     return conversionProductsList(productsSearch);
   };
 
-  const getShoppingList = (params: SearchProps) => {
+  const getShoppingList = async (params: SearchProps) => {
     const options = { ...params, id };
 
-    return isB2BUser ? getB2BShoppingListDetails(options) : getBcShoppingListDetails(options);
+    let shoppingListDetails = isB2BUser ? await getB2BShoppingListDetails(options) : await getBcShoppingListDetails(options);
+    const quantities = getShoppingListItemQuantities(id);
+
+    // fetch the quantity from sessionStorage and add it to the edges
+    for(let edge of shoppingListDetails.products.edges) {
+      const quantity = quantities.find((q: ListItemProps) => q.node.id === edge.node.id);
+      edge.node.quantity = quantity?.node.quantity || 0;
+    };
+
+    return shoppingListDetails;
   };
 
   const deleteShoppingListItem = (itemId: string | number) => {
@@ -166,10 +177,14 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
 
   const tableRef = useRef<TableRefProps | null>(null);
 
-  const [checkedArr, setCheckedArr] = useState<CustomFieldItems>([]);
+  const [checkedArr, setCheckedArr] = useState<ListItemProps[]>(() => {
+    const quantities = getShoppingListItemQuantities(id);
+    return quantities.map((q: ListItemProps) => ({node: q.node}));
+  });
   const [shoppingListInfo, setShoppingListInfo] = useState<null | ShoppingListInfoProps>(null);
   const [customerInfo, setCustomerInfo] = useState<null | CustomerInfoProps>(null);
   const [isRequestLoading, setIsRequestLoading] = useState(false);
+  const [disabledResetQuantities, setDisabledResetQuantities] = useState<boolean>(true);
 
   const [deleteOpen, setDeleteOpen] = useState<boolean>(false);
   const [deleteItemId, setDeleteItemId] = useState<number | string>('');
@@ -199,6 +214,7 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
 
     return submitShoppingListPermission;
   }, [submitShoppingListPermission, isB2BUser, shoppingListInfo]);
+  
   const b2bSubmitShoppingListPermission = isB2BUser
     ? submitShoppingList
     : role === CustomerRole.JUNIOR_BUYER;
@@ -269,6 +285,28 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
     return [];
   };
 
+  useEffect(() => {
+    setShoppingListItemQuantities(id, checkedArr);
+    setDisabledResetQuantities(checkedArr.length === 0);
+  }, [checkedArr]);
+
+  const addItemToCheckedArr = (product: ListItemProps) => {
+    setCheckedArr(oldArray => {
+      const newArray = [...oldArray];
+      const existingItem = newArray.find((item: ListItemProps) => item.node.id === product.node.id);
+      if(existingItem) {
+        existingItem.node.quantity = product.node.quantity;
+      } else {
+        newArray.push(product);
+      }
+      return newArray;
+    });
+  }
+
+  const handleResetQuantities = () => {
+    setCheckedArr([]);
+  }
+
   const getShoppingListDetails = async (params: SearchProps) => {
     const shoppingListDetailInfo = await getShoppingList(params);
 
@@ -289,6 +327,13 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
         totalCount: 0,
       };
     }
+
+    for(let edge of listProducts) {
+      const qty = Number(edge.node.quantity);
+      if(!isNaN(qty) && qty > 0) {
+        addItemToCheckedArr(edge);
+      }
+    };
 
     return {
       edges: listProducts,
@@ -332,6 +377,18 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
     setDeleteOpen(false);
     setDeleteItemId('');
   };
+
+  const handleUpdateItemQuantity = (itemData: CustomFieldItems) => {
+    const { quantity, currentNode } = itemData;
+
+    // Update checkedArr based on quantity
+    currentNode.quantity = quantity;
+    if(quantity === 0) {
+      setCheckedArr(oldArray => oldArray.filter((item: ListItemProps) => item.node.id !== currentNode.id));
+    } else {
+      addItemToCheckedArr({node: currentNode});
+    }
+  }
 
   const handleDeleteItems = async (itemId: number | string = '') => {
     setIsRequestLoading(true);
@@ -467,7 +524,9 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
                   isReadForApprove={isReadForApprove}
                   isJuniorApprove={isJuniorApprove}
                   allowJuniorPlaceOrder={allowJuniorPlaceOrder}
-                  setCheckedArr={setCheckedArr}
+                  handleUpdateItemQuantity={handleUpdateItemQuantity}
+                  disabledResetQuantities={disabledResetQuantities}
+                  handleResetQuantities={handleResetQuantities}
                   shoppingListInfo={shoppingListInfo}
                   isRequestLoading={isRequestLoading}
                   setIsRequestLoading={setIsRequestLoading}

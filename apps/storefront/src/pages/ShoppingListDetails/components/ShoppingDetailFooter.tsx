@@ -7,7 +7,7 @@ import Cookies from 'js-cookie';
 import { v1 as uuid } from 'uuid';
 
 import CustomButton from '@/components/button/CustomButton';
-import { CART_URL, CHECKOUT_URL, PRODUCT_DEFAULT_IMAGE } from '@/constants';
+import { /*CART_URL,*/ CHECKOUT_URL, PRODUCT_DEFAULT_IMAGE } from '@/constants';
 import { useMobile } from '@/hooks';
 import { GlobalContext } from '@/shared/global';
 import { getVariantInfoBySkus, searchProducts } from '@/shared/service/b2b/graphql/product';
@@ -258,17 +258,11 @@ function ShoppingDetailFooter(props: ShoppingDetailFooterProps) {
           ) {
             window.location.href = CHECKOUT_URL;
           } else {
-            snackbar.success(b3Lang('shoppingList.footer.productsAddedToCart'), {
-              action: {
-                label: b3Lang('shoppingList.reAddToCart.viewCart'),
-                onClick: () => {
-                  if (window.b2b.callbacks.dispatchEvent('on-click-cart-button')) {
-                    window.location.href = CART_URL;
-                  }
-                },
-              },
-            });
             b3TriggerCartNumber();
+            window.parent.postMessage({
+              type: 'open-cart-flyout',
+            }, '*');
+            // window.location.href = CART_URL;
           }
         }
       }

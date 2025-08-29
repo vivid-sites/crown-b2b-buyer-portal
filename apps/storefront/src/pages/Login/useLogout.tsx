@@ -7,6 +7,8 @@ import { clearMasqueradeCompany, useAppDispatch, useAppSelector } from '@/store'
 import b2bLogger from '@/utils/b3Logger';
 import { logoutSession } from '@/utils/b3logout';
 
+import { clearShoppingListItemQuantities } from '@/shared/service/vs/shoppingListQuantityService';
+
 const useEndMasquerade = () => {
   const isMasquerading = useAppSelector(
     ({ b2bFeatures }) => b2bFeatures.masqueradeCompany.isAgenting,
@@ -18,6 +20,7 @@ const useEndMasquerade = () => {
     if (isMasquerading) {
       await superAdminEndMasquerade(Number(salesRepCompanyId));
       storeDispatch(clearMasqueradeCompany());
+      clearShoppingListItemQuantities();
     }
   }, [salesRepCompanyId, storeDispatch, isMasquerading]);
 };

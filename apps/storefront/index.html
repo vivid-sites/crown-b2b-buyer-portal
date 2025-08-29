@@ -891,17 +891,17 @@
     <script>
       window.b3CheckoutConfig = {
         routes: {
-        dashboard: "/account.php?action=order_status",
+          dashboard: "/account.php?action=order_status",
         },
-        };
-        window.B3 = {
+      };
+      window.B3 = {
         setting: {
-        store_hash: "twftgtyvcg",
-        channel_id: 1,
-        platform: "custom",
-        b2b_client_id: "dl7c39mdpul6hyc489yk0vzxl6jesyx",
-        b2b_url: "https://api.bundleb2b.net",
-        captcha_setkey: "6LdGN_sgAAAAAGYFg1lmVoakQ8QXxbhWqZ1GpYaJ",environment: "production"
+          store_hash: "twftgtyvcg",
+          channel_id: 1,
+          platform: "custom",
+          b2b_client_id: "dl7c39mdpul6hyc489yk0vzxl6jesyx",
+          b2b_url: "https://api.bundleb2b.net",
+          captcha_setkey: "6LdGN_sgAAAAAGYFg1lmVoakQ8QXxbhWqZ1GpYaJ",environment: "production"
         },
         "dom.checkoutRegisterParentElement": "#checkout-app",
         "dom.registerElement": '[href^="/login.php"], #checkout-customer-login, [href="/login.php"] .navUser-item-loginLabel, #checkout-customer-returning .form-legend-container [href="#"]',
@@ -909,8 +909,7 @@
         before_login_goto_page: "/account.php?action=order_status",
         checkout_super_clear_session: "true",
         "dom.navUserLoginElement": ".navUser-item.navUser-item--account",
-        };
-       
+      };
     </script>
     <script>
       $('#b2bRemoveOrAdd').click(() => {
@@ -978,5 +977,14 @@
       })
     </script>
     <script type="module" src="/src/main.ts"></script>
+    <script>
+      document.addEventListener('readystatechange', (e) => {
+        if (document.readyState === 'complete') {
+          window.addEventListener('message', (e) => {
+            console.log('message', e)
+          });
+        }
+      })
+    </script>
   </body>
 </html>

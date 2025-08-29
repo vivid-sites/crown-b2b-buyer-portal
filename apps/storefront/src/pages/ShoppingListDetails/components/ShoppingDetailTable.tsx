@@ -10,11 +10,11 @@ import {
 } from 'react';
 import { useB3Lang } from '@b3/lang';
 import { Delete, Edit, StickyNote2 } from '@mui/icons-material';
-import { Box, Grid, styled, TextField, Typography } from '@mui/material';
+import { Box, Button, Grid, styled, TextField, Typography } from '@mui/material';
 import cloneDeep from 'lodash-es/cloneDeep';
 
 import { B3PaginationTable, GetRequestList } from '@/components/table/B3PaginationTable';
-import { TableColumnItem } from '@/components/table/B3Table';
+import { TableColumnItem, WithRowControls } from '@/components/table/B3Table';
 import { PRODUCT_DEFAULT_IMAGE } from '@/constants';
 import { useMobile, useSort } from '@/hooks';
 import { updateB2BShoppingListsItem, updateBcShoppingListsItem } from '@/shared/service/b2b';
@@ -67,7 +67,9 @@ interface ShoppingDetailTableProps {
   setIsRequestLoading: Dispatch<SetStateAction<boolean>>;
   shoppingListId: number | string;
   getShoppingListDetails: GetRequestList<SearchProps, CustomFieldItems>;
-  setCheckedArr: (values: CustomFieldItems) => void;
+  handleUpdateItemQuantity: (values: CustomFieldItems) => void;
+  disabledResetQuantities: boolean;
+  handleResetQuantities: () => void;
   isReadForApprove: boolean;
   isJuniorApprove: boolean;
   allowJuniorPlaceOrder: boolean;
@@ -112,7 +114,10 @@ const StyledShoppingListTableContainer = styled('div')(() => ({
     '& tr: hover': {
       '& #shoppingList-actionList': {
         opacity: 1,
-      },
+      }
+    },
+    '& tr.Mui-selected': {
+      border: '2px solid #1976D2'
     },
   },
 }));
@@ -130,12 +135,14 @@ const StyledTextField = styled(TextField)(() => ({
   },
 }));
 
-const defaultSortKey = 'updatedAt';
+const defaultSortKey = 'Product';
 
 const sortKeys = {
   Product: 'productName',
   updatedAt: 'updatedAt',
   Qty: 'quantity',
+  Sku: 'productSku',
+  SortOrder: 'sortOrder',
 };
 
 function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>) {
@@ -148,30 +155,32 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
     setIsRequestLoading,
     shoppingListId,
     getShoppingListDetails,
-    setCheckedArr,
+    handleUpdateItemQuantity,
+    disabledResetQuantities,
+    handleResetQuantities,
     isReadForApprove,
     setDeleteItemId,
     setDeleteOpen,
     isJuniorApprove,
     isB2BUser,
-    allowJuniorPlaceOrder,
-    productQuoteEnabled,
+    //allowJuniorPlaceOrder,
+    //productQuoteEnabled,
     isCanEditShoppingList,
-    role,
+    //role,
   } = props;
 
-  const showInclusiveTaxPrice = useAppSelector(({ global }) => global.showInclusiveTaxPrice);
+  //const showInclusiveTaxPrice = useAppSelector(({ global }) => global.showInclusiveTaxPrice);
 
-  const { shoppingListCreateActionsPermission, submitShoppingListPermission } =
+  const { shoppingListCreateActionsPermission/*, submitShoppingListPermission */} =
     useAppSelector(rolePermissionSelector);
 
   const canShoppingListActions = isB2BUser
     ? shoppingListCreateActionsPermission && isCanEditShoppingList
     : true;
   const b2bAndBcShoppingListActionsPermissions = isB2BUser ? canShoppingListActions : true;
-  const b2bSubmitShoppingListPermission = isB2BUser
-    ? submitShoppingListPermission
-    : Number(role) === 2;
+  // const b2bSubmitShoppingListPermission = isB2BUser
+  //    ? submitShoppingListPermission
+  //    : Number(role) === 2;
 
   const paginationTableRef = useRef<PaginationTableRefProps | null>(null);
 
@@ -179,23 +188,25 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
   const [optionsProduct, setOptionsProduct] = useState<any>(null);
   const [editProductItemId, setEditProductItemId] = useState<number | string | null>(null);
   const [search, setSearch] = useState<SearchProps>({
-    orderBy: `-${sortKeys[defaultSortKey]}`,
+    orderBy: `${sortKeys[defaultSortKey]}`,
   });
   const [qtyNotChangeFlag, setQtyNotChangeFlag] = useState<boolean>(true);
   const [originProducts, setOriginProducts] = useState<ListItemProps[]>([]);
-  const [shoppingListTotalPrice, setShoppingListTotalPrice] = useState<number>(0.0);
+  //const [shoppingListTotalPrice, setShoppingListTotalPrice] = useState<number>(0.0);
 
   const [addNoteOpen, setAddNoteOpen] = useState<boolean>(false);
   const [addNoteItemId, setAddNoteItemId] = useState<number | string>('');
   const [notes, setNotes] = useState<string>('');
-  const [disabledSelectAll, setDisabledSelectAll] = useState<boolean>(false);
+  //const [disabledSelectAll, setDisabledSelectAll] = useState<boolean>(false);
 
-  const [priceHidden, setPriceHidden] = useState<boolean>(false);
+  //const [priceHidden, setPriceHidden] = useState<boolean>(false);
 
   const [handleSetOrderBy, order, orderBy] = useSort(sortKeys, defaultSortKey, search, setSearch);
 
   const handleUpdateProductQty = (id: number | string, value: number | string) => {
-    if (Number(value) < 0) return;
+    let newQty = Number(value);
+    
+    if (isNaN(newQty) || newQty < 0) return;
     const currentItem = originProducts.find((item: ListItemProps) => {
       const { node } = item;
 
@@ -203,23 +214,23 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
     });
 
     const currentQty = currentItem?.node?.quantity || '';
-    setQtyNotChangeFlag(Number(currentQty) === Number(value));
+    setQtyNotChangeFlag(Number(currentQty) === newQty);
 
     const listItems: ListItemProps[] = paginationTableRef.current?.getList() || [];
     const newListItems = listItems?.map((item: ListItemProps) => {
       const { node } = item;
       if (node?.id === id) {
-        node.quantity = `${Number(value)}`;
-        node.disableCurrentCheckbox = Number(value) === 0;
+        node.quantity = `${newQty}`;
+        node.disableCurrentCheckbox = newQty === 0;
       }
 
       return item;
     });
 
-    const nonNumberProducts = newListItems.filter(
-      (item: ListItemProps) => Number(item.node.quantity) === 0,
-    );
-    setDisabledSelectAll(nonNumberProducts.length === newListItems.length);
+    //const nonNumberProducts = newListItems.filter(
+    //  (item: ListItemProps) => Number(item.node.quantity) === 0,
+    //);
+    //setDisabledSelectAll(nonNumberProducts.length === newListItems.length);
     paginationTableRef.current?.setList([...newListItems]);
   };
 
@@ -270,6 +281,12 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
       };
 
       await updateShoppingListItem(data);
+
+      // Update the quantity in sessionStorage
+      if(editProductItemId) {
+        handleUpdateItemQuantity({ shoppingListId, itemId: editProductItemId, currentNode: products[0], quantity: products[0].quantity });
+      }
+
       setSelectedOptionsOpen(false);
       setEditProductItemId('');
       snackbar.success(b3Lang('shoppingList.table.productUpdated'));
@@ -318,6 +335,9 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
       ? updateB2BShoppingListsItem
       : updateBcShoppingListsItem;
 
+    // Update the quantity in sessionStorage
+    handleUpdateItemQuantity({ currentNode, quantity: itemData.quantity });
+
     await updateShoppingListItem(data);
   };
 
@@ -334,25 +354,25 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
     }
   };
 
-  const getSelectCheckbox = (selectCheckbox: Array<string | number>) => {
-    if (selectCheckbox.length > 0) {
-      const productList = paginationTableRef.current?.getList() || [];
-      const checkedItems: CustomFieldItems[] = [];
-      selectCheckbox.forEach((item: number | string) => {
-        const newItems = productList.find((product: ListItemProps) => {
-          const { node } = product;
+  // const getSelectCheckbox = (selectCheckbox: Array<string | number>) => {
+  //   if (selectCheckbox.length > 0) {
+  //     const productList = paginationTableRef.current?.getList() || [];
+  //     const checkedItems: CustomFieldItems[] = [];
+  //     selectCheckbox.forEach((item: number | string) => {
+  //       const newItems = productList.find((product: ListItemProps) => {
+  //         const { node } = product;
 
-          return node.id === item;
-        });
+  //         return node.id === item;
+  //       });
 
-        if (newItems) checkedItems.push(newItems);
-      });
+  //       if (newItems) checkedItems.push(newItems);
+  //     });
 
-      setCheckedArr([...checkedItems]);
-    } else {
-      setCheckedArr([]);
-    }
-  };
+  //     setCheckedArr([...checkedItems]);
+  //   } else {
+  //     setCheckedArr([]);
+  //   }
+  // };
 
   const handleCancelAddNotesClick = () => {
     setAddNoteOpen(false);
@@ -376,37 +396,37 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
     if (shoppingListInfo) {
       const {
         products: { edges },
-        grandTotal,
-        totalTax,
+        //grandTotal,
+        //totalTax,
       } = shoppingListInfo;
 
-      const NewShoppingListTotalPrice = showInclusiveTaxPrice
-        ? Number(grandTotal)
-        : Number(grandTotal) - Number(totalTax) || 0.0;
+      // const NewShoppingListTotalPrice = showInclusiveTaxPrice
+      //   ? Number(grandTotal)
+      //   : Number(grandTotal) - Number(totalTax) || 0.0;
 
-      const isPriceHidden = edges.some((item: CustomFieldItems) => {
-        if (item?.node?.productsSearch) {
-          return item.node.productsSearch?.isPriceHidden || false;
-        }
+      // const isPriceHidden = edges.some((item: CustomFieldItems) => {
+      //   if (item?.node?.productsSearch) {
+      //     return item.node.productsSearch?.isPriceHidden || false;
+      //   }
 
-        return false;
-      });
+      //   return false;
+      // });
 
-      setPriceHidden(isPriceHidden);
+      //setPriceHidden(isPriceHidden);
       setOriginProducts(cloneDeep(edges));
-      setShoppingListTotalPrice(NewShoppingListTotalPrice);
+      //setShoppingListTotalPrice(NewShoppingListTotalPrice);
     }
-  }, [shoppingListInfo, showInclusiveTaxPrice]);
+  }, [shoppingListInfo/*, showInclusiveTaxPrice*/]);
 
-  useEffect(() => {
-    if (shoppingListInfo) {
-      const {
-        products: { edges },
-      } = shoppingListInfo;
-      const nonNumberProducts = edges.filter((item: ListItemProps) => item.node.quantity === 0);
-      setDisabledSelectAll(nonNumberProducts.length === edges.length);
-    }
-  }, [shoppingListInfo]);
+  // useEffect(() => {
+  //   if (shoppingListInfo) {
+  //     const {
+  //       products: { edges },
+  //     } = shoppingListInfo;
+  //     const nonNumberProducts = edges.filter((item: ListItemProps) => item.node.quantity === 0);
+  //     setDisabledSelectAll(nonNumberProducts.length === edges.length);
+  //   }
+  // }, [shoppingListInfo]);
 
   const showPrice = (price: string, row: CustomFieldItems): string | number => {
     const {
@@ -420,6 +440,17 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
       forcedSkip: true,
     });
   };
+
+  const selectedDelegate = (node: WithRowControls<CustomFieldItems>) => {
+    return node.quantity > 0;
+  };
+
+  function handleResetQuantitiesInternal() {
+    if(handleResetQuantities){
+      handleResetQuantities();
+      paginationTableRef.current?.refresh();
+    }
+  }
 
   const columnItems: TableColumnItem<ListItem>[] = [
     {
@@ -714,25 +745,41 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
             quantity: shoppingListInfo?.products?.totalCount || 0,
           })}
         </Typography>
-        <Typography
-          sx={{
-            fontSize: '24px',
-          }}
-        >
-          {priceHidden ? '' : currencyFormat(shoppingListTotalPrice || 0.0)}
-        </Typography>
       </Box>
+      <Grid container spacing={2} alignItems="center">
+        <Grid item sx={{flex: '1 1 auto'}}>
+            <B3FilterSearch
+              searchBGColor="rgba(0, 0, 0, 0.06)"
+              handleChange={(e) => {
+                handleSearchProduct(e);
+              }}
+            />
+        </Grid>
+        <Grid item>
+            <Button
+              variant="contained"
+              sx={{
+                whiteSpace: 'nowrap',
+                padding: '0.5rem 1rem',
+                minWidth: 'auto',
+              }}
+              disabled={disabledResetQuantities}
+              onClick={() => {
+                handleResetQuantitiesInternal();
+              }}
+            >
+              {b3Lang('shoppingList.table.resetQuantities')}
+            </Button>
+        </Grid>
+      </Grid>
       <Box
         sx={{
           marginBottom: '5px',
-        }}
+          display: 'flex',
+          justifyContent: 'space-between',
+          width: '100%',
+      }}
       >
-        <B3FilterSearch
-          searchBGColor="rgba(0, 0, 0, 0.06)"
-          handleChange={(e) => {
-            handleSearchProduct(e);
-          }}
-        />
       </Box>
 
       <B3PaginationTable
@@ -742,26 +789,20 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
         getRequestList={getShoppingListDetails}
         searchParams={search}
         isCustomRender={false}
-        showCheckbox
-        showSelectAllCheckbox
-        applyAllDisableCheckbox={false}
-        disableCheckbox={
-          disabledSelectAll ||
-          (b2bSubmitShoppingListPermission
-            ? !(allowJuniorPlaceOrder || productQuoteEnabled)
-            : (isReadForApprove || isJuniorApprove) && b2bAndBcShoppingListActionsPermissions)
-        }
+        showCheckbox={false}
+        showSelectAllCheckbox={false}
         hover
         labelRowsPerPage={b3Lang('shoppingList.table.itemsPerPage')}
         showBorder={false}
         requestLoading={setIsRequestLoading}
-        getSelectCheckbox={getSelectCheckbox}
+        //getSelectCheckbox={getSelectCheckbox}
         itemIsMobileSpacing={0}
         noDataText={b3Lang('shoppingList.table.noProductsFound')}
         sortDirection={order}
         orderBy={orderBy}
         sortByFn={handleSetOrderBy}
         pageType="shoppingListDetailsTable"
+        selectedDelegate={selectedDelegate}
         renderItem={(row, index, checkBox) => (
           <ShoppingDetailCard
             len={shoppingListInfo?.products?.edges.length || 0}

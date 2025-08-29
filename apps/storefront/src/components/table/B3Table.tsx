@@ -101,6 +101,7 @@ interface TableProps<Row> {
   sortDirection?: 'asc' | 'desc';
   sortByFn?: (e: { key: string }) => void;
   orderBy?: string;
+  selectedDelegate?: (node: WithRowControls<Row>) => boolean;
 }
 
 interface RowProps<Row> {
@@ -120,6 +121,7 @@ interface RowProps<Row> {
   hover?: boolean;
   clickableRowStyles?: { [key: string]: string };
   lastItemBorderBottom: string;
+  selectedDelegate?: (node: WithRowControls<Row>) => boolean;
 }
 
 const MOUSE_POINTER_STYLE = {
@@ -143,6 +145,7 @@ function Row<Row>({
   hover,
   CollapseComponent,
   applyAllDisableCheckbox,
+  selectedDelegate,
 }: RowProps<Row>) {
   const { isCollapse = false, disableCurrentCheckbox } = node;
 
@@ -154,6 +157,7 @@ function Row<Row>({
         // @ts-expect-error typed previously as an any
         key={`${node[tableKey || 'id'] + index}`}
         hover={hover}
+        selected={selectedDelegate?.(node)}
         onClick={() => onClickRow?.(node, index)}
         sx={clickableRowStyles}
         data-testid="tableBody-Row"
@@ -254,6 +258,7 @@ export function B3Table<Row>({
   sortDirection = 'asc',
   sortByFn,
   orderBy = '',
+  selectedDelegate,
 }: TableProps<Row>) {
   const {
     state: {
@@ -492,6 +497,7 @@ export function B3Table<Row>({
                       tableKey={tableKey}
                       onClickRow={onClickRow}
                       CollapseComponent={CollapseComponent}
+                      selectedDelegate={selectedDelegate}
                     />
                   );
                 })}
