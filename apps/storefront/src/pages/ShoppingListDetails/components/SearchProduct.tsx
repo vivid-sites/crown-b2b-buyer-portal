@@ -1,11 +1,11 @@
 import { ChangeEvent, KeyboardEvent, useState } from 'react';
-import { useB3Lang } from '@b3/lang';
 import { Search as SearchIcon } from '@mui/icons-material';
 import { Box, InputAdornment, TextField, Typography } from '@mui/material';
 
 import CustomButton from '@/components/button/CustomButton';
 import B3Spin from '@/components/spin/B3Spin';
 import { useBlockPendingAccountViewPrice } from '@/hooks';
+import { useB3Lang } from '@/lib/lang';
 import { searchProducts } from '@/shared/service/b2b';
 import { useAppSelector } from '@/store';
 import { snackbar } from '@/utils';
@@ -20,7 +20,7 @@ import ProductListDialog from './ProductListDialog';
 
 interface SearchProductProps {
   updateList?: () => void;
-  addToList: (products: CustomFieldItems[]) => void;
+  addToList: (products: CustomFieldItems[]) => Promise<void>;
   searchDialogTitle?: string;
   addButtonText?: string;
   addQuoteButtonText?: string;

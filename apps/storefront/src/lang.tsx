@@ -1,5 +1,6 @@
 import { useContext, useState } from 'react';
-import { LangProvider } from '@b3/lang';
+
+import { LangProvider } from '@/lib/lang';
 
 import { CustomStyleContext } from './shared/customStyleButton';
 
@@ -38,7 +39,3 @@ export function LangWrapper({ children }: { children: React.ReactNode }) {
 
   return <LangProvider customText={customText}>{children}</LangProvider>;
 }
-
-export default {
-  LangWrapper,
-};

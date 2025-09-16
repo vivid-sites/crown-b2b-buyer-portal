@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/naming-convention */
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import persistReducer from 'redux-persist/es/persistReducer';
 import storageSession from 'redux-persist/lib/storage/session';
@@ -21,7 +20,7 @@ interface Tokens {
   currentCustomerJWT: string;
 }
 
-export interface PermissionsCodesProps {
+interface PermissionsCodesProps {
   code: string;
   permissionLevel: number;
 }
@@ -152,7 +151,7 @@ const companySlice = createSlice({
       state,
       { payload }: PayloadAction<Partial<CompanyHierarchyInfoProps>>,
     ) => {
-      let companyHierarchyList = state.companyHierarchyInfo.companyHierarchyList;
+      let { companyHierarchyList } = state.companyHierarchyInfo;
 
       if (payload.companyHierarchyAllList?.length) {
         companyHierarchyList = payload.companyHierarchyAllList.filter((item) => item.channelFlag);
@@ -170,17 +169,13 @@ const companySlice = createSlice({
 export const {
   clearCompanySlice,
   setCompanyInfo,
-  clearCompanyInfo,
   setCompanyStatus,
   setCustomerInfo,
-  clearCustomer,
-  setTokens,
   setB2BToken,
   setBcGraphQLToken,
   setCurrentCustomerJWT,
   setLoginType,
   setPermissionModules,
-  setCompanyHierarchyListModules,
   setCompanyHierarchyInfoModules,
   setPagesSubsidiariesPermission,
 } = companySlice.actions;

@@ -1,4 +1,4 @@
-import config from '@b3/global-b3';
+import config from '@/lib/config';
 
 export const requestIdleCallbackFunction: typeof window.requestIdleCallback =
   window.requestIdleCallback
@@ -15,7 +15,7 @@ export const requestIdleCallbackFunction: typeof window.requestIdleCallback =
         }, 1);
       };
 
-export class InitializationEnvironment {
+class InitializationEnvironment {
   clickedLinkElement?: HTMLElement;
 
   #isInitVariable = false;

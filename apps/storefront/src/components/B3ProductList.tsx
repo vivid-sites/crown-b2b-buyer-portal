@@ -1,11 +1,11 @@
 import { ChangeEvent, KeyboardEvent, ReactElement, useEffect, useState } from 'react';
-import { useB3Lang } from '@b3/lang';
 import styled from '@emotion/styled';
-import { Box, Checkbox, FormControlLabel, TextField, Typography } from '@mui/material';
+import { Box, Button, Checkbox, FormControlLabel, TextField, Typography } from '@mui/material';
 import noop from 'lodash-es/noop';
 
 import { PRODUCT_DEFAULT_IMAGE } from '@/constants';
 import { useMobile } from '@/hooks';
+import { useB3Lang } from '@/lib/lang';
 import { useAppSelector } from '@/store';
 import { currencyFormat, ordersCurrencyFormat } from '@/utils';
 import { getDisplayPrice, judgmentBuyerProduct } from '@/utils/b3Product/b3Product';
@@ -124,6 +124,7 @@ interface ProductProps<T> {
   canToProduct?: boolean;
   textAlign?: string;
   type?: string;
+  getCurrentProductUrls?: (productId: number | undefined) => void;
 }
 
 export default function B3ProductList<T>(props: ProductProps<T>) {
@@ -142,6 +143,7 @@ export default function B3ProductList<T>(props: ProductProps<T>) {
     textAlign = 'left',
     money,
     type,
+    getCurrentProductUrls,
   } = props;
 
   const [list, setList] = useState<ProductItem[]>([]);
@@ -402,6 +404,20 @@ export default function B3ProductList<T>(props: ProductProps<T>) {
                 <Typography variant="body1" color="#616161">
                   {product.sku}
                 </Typography>
+                {product.type === 'digital' &&
+                  product.downloadFileUrls &&
+                  product.downloadFileUrls.length > 0 && (
+                    <Button
+                      sx={{
+                        m: '0 0 0 -8px',
+                        minWidth: 0,
+                      }}
+                      variant="text"
+                      onClick={() => getCurrentProductUrls?.(product.product_id)}
+                    >
+                      {b3Lang('orderDetail.digitalProducts.viewFiles')}
+                    </Button>
+                  )}
                 {(product.product_options || []).map((option) => (
                   <ProductOptionText
                     key={`${option.option_id}`}

@@ -1,11 +1,11 @@
 import { forwardRef, useEffect, useId, useImperativeHandle, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useB3Lang } from '@b3/lang';
 import { Box, Typography } from '@mui/material';
 import cloneDeep from 'lodash-es/cloneDeep';
 
 import { B3CustomForm } from '@/components';
 import { useGetCountry, useMobile } from '@/hooks';
+import { useB3Lang } from '@/lib/lang';
 import { AddressItemType } from '@/types/address';
 import { BillingAddress, ContactInfo, ShippingAddress } from '@/types/quotes';
 
@@ -38,34 +38,6 @@ interface AddressProps {
   shippingSameAsBilling: boolean;
   type: string;
   setBillingChange: (value: boolean) => void;
-}
-
-export interface FormFieldsProps extends Record<string, any> {
-  name: string;
-  label?: string;
-  required?: boolean;
-  fieldType?: string;
-  default?: string | Array<any> | number;
-  xs: number;
-  variant: string;
-  size: string;
-  options?: any[];
-  replaceOptions?: {
-    label: string;
-    value: string;
-  };
-}
-
-export interface Country {
-  countryCode: string;
-  countryName: string;
-  id?: string;
-  states: [];
-}
-export interface State {
-  stateCode?: string;
-  stateName?: string;
-  id?: string;
 }
 
 function QuoteAddress(

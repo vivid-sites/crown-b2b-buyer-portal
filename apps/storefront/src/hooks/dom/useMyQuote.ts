@@ -1,6 +1,4 @@
 import { Dispatch, SetStateAction, useCallback, useContext, useEffect, useRef } from 'react';
-import config from '@b3/global-b3';
-import { useB3Lang } from '@b3/lang';
 import cloneDeep from 'lodash-es/cloneDeep';
 
 import {
@@ -10,6 +8,8 @@ import {
   splitCustomCssValue,
 } from '@/components/outSideComponents/utils/b3CustomStyles';
 import { ADD_TO_QUOTE_DEFAULT_VALUE, TRANSLATION_ADD_TO_QUOTE_VARIABLE } from '@/constants';
+import config from '@/lib/config';
+import { useB3Lang } from '@/lib/lang';
 import { CustomStyleContext } from '@/shared/customStyleButton';
 import {
   resetDraftQuoteInfo,
@@ -22,6 +22,7 @@ import { CustomerRole } from '@/types';
 import { OpenPageState } from '@/types/hooks';
 import { setCartPermissions } from '@/utils';
 
+import { useFeatureFlags } from '../useFeatureFlags';
 import useGetButtonText from '../useGetButtonText';
 
 import useDomVariation from './useDomVariation';
@@ -40,6 +41,8 @@ interface MutationObserverProps {
 const useMyQuote = ({ setOpenPage, productQuoteEnabled, role }: MutationObserverProps) => {
   const b3Lang = useB3Lang();
   const dispatch = useAppDispatch();
+  const featureFlags = useFeatureFlags();
+
   const quoteDraftUserId = useAppSelector(({ quoteInfo }) => quoteInfo.draftQuoteInfo.userId);
   const b2bId = useAppSelector(({ company }) => company.customer.b2bId);
   const isEnableProduct =
@@ -74,6 +77,7 @@ const useMyQuote = ({ setOpenPage, productQuoteEnabled, role }: MutationObserver
     setOpenPage,
     isEnableProduct,
     b3Lang,
+    featureFlags,
   );
 
   const quoteCallBack = useCallback(

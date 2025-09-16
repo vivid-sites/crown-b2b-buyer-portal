@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useB3Lang } from '@b3/lang';
 import { UploadFile as UploadFileIcon } from '@mui/icons-material';
 import { Box, Card, CardContent, Divider } from '@mui/material';
 import { v1 as uuid } from 'uuid';
@@ -8,16 +7,12 @@ import { B3CollapseContainer, B3Upload } from '@/components';
 import CustomButton from '@/components/button/CustomButton';
 import { PRODUCT_DEFAULT_IMAGE } from '@/constants';
 import { useBlockPendingAccountViewPrice } from '@/hooks';
+import { useB3Lang } from '@/lib/lang';
 import { searchProducts } from '@/shared/service/b2b';
 import { useAppSelector } from '@/store';
 import { snackbar } from '@/utils';
 import b2bLogger from '@/utils/b3Logger';
-import {
-  addQuoteDraftProducts,
-  calculateProductListPrice,
-  getNewQuoteProduct,
-  validProductQty,
-} from '@/utils/b3Product/b3Product';
+import { calculateProductListPrice, validProductQty } from '@/utils/b3Product/b3Product';
 import { conversionProductsList } from '@/utils/b3Product/shared/config';
 
 import QuickAdd from '../../ShoppingListDetails/components/QuickAdd';
@@ -25,7 +20,7 @@ import SearchProduct from '../../ShoppingListDetails/components/SearchProduct';
 
 interface AddToListProps {
   updateList: () => void;
-  addToQuote: (products: CustomFieldItems[]) => void;
+  addToQuote: (products: CustomFieldItems[]) => Promise<boolean>;
 }
 
 export default function AddToQuote(props: AddToListProps) {
@@ -42,7 +37,62 @@ export default function AddToQuote(props: AddToListProps) {
 
   const b3Lang = useB3Lang();
 
-  const addToList = async (products: CustomFieldItems[]) => {
+  const getNewQuoteProduct = (products: CustomFieldItems[]) =>
+    products.map((product) => {
+      const {
+        variantId,
+        newSelectOptionList,
+        id: productId,
+        name: productName,
+        quantity,
+        variants = [],
+        basePrice,
+        taxPrice,
+        calculatedValue,
+      } = product;
+
+      const variantInfo =
+        variants.length === 1
+          ? variants[0]
+          : variants.find((item: CustomFieldItems) => item.variant_id === variantId);
+
+      const { image_url: primaryImage = '', sku: variantSku } = variantInfo;
+
+      let selectOptions;
+      try {
+        selectOptions = JSON.stringify(newSelectOptionList);
+      } catch (error) {
+        selectOptions = '[]';
+      }
+
+      const taxExclusive = variantInfo.bc_calculated_price.tax_exclusive;
+      const taxInclusive = variantInfo.bc_calculated_price.tax_inclusive;
+
+      const basePriceExclusiveTax = basePrice || taxExclusive;
+
+      const tax = taxPrice || Number(taxInclusive) - Number(taxExclusive);
+
+      return {
+        node: {
+          basePrice: basePriceExclusiveTax,
+          taxPrice: tax,
+          optionList: selectOptions,
+          id: uuid(),
+          primaryImage,
+          productId,
+          productName,
+          calculatedValue,
+          productsSearch: {
+            ...product,
+            selectOptions,
+          },
+          quantity,
+          variantSku,
+        },
+      };
+    });
+
+    const addToList = async (products: CustomFieldItems[]) => {
     const newProducts = getNewQuoteProduct(products);
     const noSkuProducts = products.filter(({ sku, variantId, variants }) => {
       const currentProduct = variants.find(
@@ -57,13 +107,13 @@ export default function AddToQuote(props: AddToListProps) {
       snackbar.error(b3Lang('quoteDraft.notification.cantAddProductsNoSku'));
     }
 
-    if (noSkuProducts.length === products.length) return [];
+    if (noSkuProducts.length === products.length) return;
 
-    addToQuote(newProducts);
+    const success = await addToQuote(newProducts);
 
+    if (success) {
     snackbar.success(b3Lang('quoteDraft.notification.productSingular'));
-
-    return products;
+    }
   };
 
   const quickAddToList = async (variantProducts: CustomFieldItems[]) => {
@@ -95,11 +145,11 @@ export default function AddToQuote(props: AddToListProps) {
 
     const newProducts = getNewQuoteProduct(productList);
 
-    addToQuote(newProducts);
+    const success = await addToQuote(newProducts);
 
+    if (success) {
     snackbar.success(b3Lang('quoteDraft.notification.productPlural'));
-
-    return variantProducts;
+    }
   };
 
   const getOptionsList = (options: CustomFieldItems) => {
@@ -137,8 +187,6 @@ export default function AddToQuote(props: AddToListProps) {
 
       const newProductInfo: CustomFieldItems = conversionProductsList(productsSearch);
 
-      let isSuccess = false;
-
       const newProducts: CustomFieldItems[] = [];
       validProduct.forEach((product: CustomFieldItems) => {
         const {
@@ -161,7 +209,11 @@ export default function AddToQuote(props: AddToListProps) {
             id: uuid(),
             variantSku: variantItem?.sku,
             variantId,
-            productsSearch: currentProductSearch,
+            productsSearch: {
+              ...currentProductSearch,
+              newSelectOptionList: optionsList,
+              variantId,
+            },
             primaryImage: variantItem.image_url || PRODUCT_DEFAULT_IMAGE,
             productName,
             quantity: Number(qty) || 1,
@@ -175,15 +227,16 @@ export default function AddToQuote(props: AddToListProps) {
         };
 
         newProducts.push(quoteListitem);
-
-        isSuccess = true;
       });
-      isSuccess = validProductQty(newProducts);
+
+      const isSuccess = validProductQty(newProducts);
       if (isSuccess) {
         await calculateProductListPrice(newProducts, '2');
 
-        addQuoteDraftProducts(newProducts);
+        const success = await addToQuote(newProducts);
+        if (success) {
         snackbar.success(b3Lang('quoteDraft.notification.productPlural'));
+        }
         updateList();
         setIsOpenBulkLoadCSV(false);
       } else {

@@ -1,5 +1,4 @@
 import { ReactElement, ReactNode, useRef } from 'react';
-import { useB3Lang } from '@b3/lang';
 import {
   Box,
   Breakpoint,
@@ -14,12 +13,13 @@ import {
 
 import useMobile from '@/hooks/useMobile';
 import useScrollBar from '@/hooks/useScrollBar';
+import { useB3Lang } from '@/lib/lang';
 import { useAppSelector } from '@/store';
 
 import CustomButton from './button/CustomButton';
 import B3Spin from './spin/B3Spin';
 
-export interface B3DialogProps<T> {
+interface B3DialogProps<T> {
   customActions?: () => ReactElement;
   isOpen: boolean;
   leftStyleBtn?: { [key: string]: string };

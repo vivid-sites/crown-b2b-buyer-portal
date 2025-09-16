@@ -1,7 +1,6 @@
 import { MouseEvent, useContext, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { useB3Lang } from '@b3/lang';
 import styled from '@emotion/styled';
 import { Alert, Box, ImageListItem } from '@mui/material';
 import isEmpty from 'lodash-es/isEmpty';
@@ -11,6 +10,7 @@ import CustomButton from '@/components/button/CustomButton';
 import { getContrastColor } from '@/components/outSideComponents/utils/b3CustomStyles';
 import B3Spin from '@/components/spin/B3Spin';
 import { useMobile } from '@/hooks';
+import { useB3Lang } from '@/lib/lang';
 import { CustomStyleContext } from '@/shared/customStyleButton';
 import { GlobalContext } from '@/shared/global';
 import { useAppSelector } from '@/store';
@@ -53,7 +53,7 @@ interface CustomerInfo {
   [k: string]: string;
 }
 
-export const StyledRegisterContent = styled(Box)({
+const StyledRegisterContent = styled(Box)({
   '& #b3-customForm-id-name': {
     '& label[data-shrink="true"]': {
       whiteSpace: 'break-spaces',
@@ -554,9 +554,8 @@ export default function RegisteredBCToB2B(props: PageProps) {
 
         let isCompanyUserValidate = true;
         if (companyUserExtraFields.length > 0) {
-          isCompanyUserValidate = await handleValidateCompanyUserExtraFields(
-            companyUserExtraFields,
-          );
+          isCompanyUserValidate =
+            await handleValidateCompanyUserExtraFields(companyUserExtraFields);
         }
         if (!isCompanyUserValidate) {
           return;

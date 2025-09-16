@@ -1,12 +1,11 @@
 import { useContext, useState } from 'react';
-import { dispatchEvent } from '@b3/hooks';
-import { useB3Lang } from '@b3/lang';
 import { UploadFile as UploadFileIcon } from '@mui/icons-material';
 import { Box, Card, CardContent, Divider, Typography } from '@mui/material';
 
 import { B3Upload } from '@/components';
 import CustomButton from '@/components/button/CustomButton';
-import { useBlockPendingAccountViewPrice } from '@/hooks';
+import { dispatchEvent, useBlockPendingAccountViewPrice } from '@/hooks';
+import { useB3Lang } from '@/lib/lang';
 import { addProductToBcShoppingList, addProductToShoppingList } from '@/shared/service/b2b';
 import { useAppSelector } from '@/store';
 import { snackbar } from '@/utils';
@@ -56,20 +55,17 @@ export default function AddToShoppingList(props: AddToListProps) {
         };
       });
 
-      const res = await addItemsToShoppingList({
+      await addItemsToShoppingList({
         shoppingListId: id,
         items,
       });
 
       snackbar.success(b3Lang('shoppingList.addToShoppingList.productsAdded'));
-
-      return res;
     } catch (e: any) {
       if (e.message.length > 0) {
         snackbar.error(e.message);
       }
     }
-    return true;
   };
 
   const quickAddToList = async (products: CustomFieldItems[]) => {
@@ -86,14 +82,12 @@ export default function AddToShoppingList(props: AddToListProps) {
       };
     });
 
-    const res = await addItemsToShoppingList({
+    await addItemsToShoppingList({
       shoppingListId: id,
       items,
     });
 
     snackbar.success(b3Lang('shoppingList.addToShoppingList.productsAdded'));
-
-    return res;
   };
 
   const getValidProducts = (products: CustomFieldItems) => {

@@ -36,6 +36,10 @@ export default /* GraphQL */ `
     message: String!
   }
 
+  input CreateCartFromInvoiceInput {
+    invoices: [InvoicePaymentInput!]!
+  }
+
   type CartCreateResult {
     cart: Cart
     errors: [CreateCartFromInvoiceError!]!
@@ -43,6 +47,10 @@ export default /* GraphQL */ `
 
   type GenerateInvoicePdfError implements Error {
     message: String!
+  }
+
+  input GenerateInvoicePdfInput {
+    invoiceId: ID!
   }
 
   type GenerateInvoicePdfResult {
@@ -62,7 +70,7 @@ export default /* GraphQL */ `
     dueDate: DateTime!
     balance: InvoiceBalances!
     status: InvoiceStatus!
-    order: Order!
+    order: Order # Apparently multiple orders can be linked to the same invoice, we could consider making this a list
     company: Company!
   }
 
@@ -75,6 +83,19 @@ export default /* GraphQL */ `
     edges: [InvoiceEdge!]!
     pageInfo: PageInfo!
     collectionInfo: CollectionInfo!
+  }
+
+  input ExportInvoicesAsCSVSearchInput {
+    filters: InvoiceFiltersInput
+    sortBy: InvoicesSortInput
+    before: String
+    after: String
+    first: Int
+    last: Int
+  }
+
+  input ExportInvoicesAsCSVByIdInput {
+    invoicesIds: [ID!]!
   }
 
   type ExportInvoicesAsCSVResult {
@@ -107,17 +128,18 @@ export default /* GraphQL */ `
   }
 
   type InvoiceMutations {
-    createCartFromInvoices(invoices: [InvoicePaymentInput!]!): CartCreateResult!
-    generateInvoicePdf(invoiceId: ID!): GenerateInvoicePdfResult!
+    createCartFromInvoices(
+      input: CreateCartFromInvoiceInput!
+    ): CartCreateResult!
+    generateInvoicePdf(
+      input: GenerateInvoicePdfInput!
+    ): GenerateInvoicePdfResult!
     exportAsCSVFromSearch(
-      filters: InvoiceFiltersInput
-      sortBy: InvoicesSortInput
-      before: String
-      after: String
-      first: Int
-      last: Int
+      input: ExportInvoicesAsCSVSearchInput!
     ): ExportInvoicesAsCSVResult!
-    exportAsCSVByIds(invoicesIds: [ID!]!): ExportInvoicesAsCSVResult!
+    exportAsCSVByIds(
+      input: ExportInvoicesAsCSVByIdInput!
+    ): ExportInvoicesAsCSVResult!
   }
 
   type ReceiptLineSet {
@@ -136,7 +158,7 @@ export default /* GraphQL */ `
     receiptLineSet: [ReceiptLineSet!]!
   }
 
-  extend type Query {
+  extend type Site {
     invoice(invoiceId: ID!): Invoice!
     receipt(receiptId: ID!): Receipt!
   }

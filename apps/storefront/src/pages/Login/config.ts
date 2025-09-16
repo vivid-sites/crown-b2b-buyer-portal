@@ -1,5 +1,4 @@
-import { LangFormatFunction } from '@b3/lang';
-
+import { LangFormatFunction } from '@/lib/lang';
 import { LoginFlagType, LoginTypeConfig } from '@/types/login';
 import { BigCommerceStorefrontAPIBaseURL, validatorRules } from '@/utils';
 import b2bLogger from '@/utils/b3Logger';
@@ -8,11 +7,6 @@ export type LoginConfig = {
   email: string;
   password: string;
 };
-
-interface ChannelIdProps {
-  channelId: number;
-  urls: Array<string>;
-}
 
 export const getForgotPasswordFields = (b3Lang: LangFormatFunction) => [
   {
@@ -88,51 +82,6 @@ export const sendForgotPasswordEmailFor = (email: string) => {
     .catch((error) => b2bLogger.error('error', error));
 };
 
-export const getLoginFlag = (search: string, key: string) => {
-  if (!search) {
-    return '';
-  }
-  const searchParams = new URLSearchParams(search);
-
-  return searchParams.get(key);
-};
-
-export const getBCChannelId = (storeSiteAny: Array<ChannelIdProps>) => {
-  if (storeSiteAny.length === 1) {
-    return storeSiteAny[0].channelId;
-  }
-
-  let channelId = 1;
-
-  const { origin } = window.location;
-
-  storeSiteAny.forEach((item: ChannelIdProps) => {
-    if (item.urls.includes(origin)) {
-      channelId = item.channelId;
-    }
-  });
-
-  return channelId;
-};
-
-export const logout = () =>
-  new Promise<boolean>((resolve, reject) => {
-    fetch('/login.php?action=logout')
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        return response.text();
-      })
-      .then((responseData) => {
-        const isFlag = responseData.includes('alertBox--success');
-        resolve(isFlag);
-      })
-      .catch((e) => {
-        reject(e);
-      });
-  });
-
 export const loginType: LoginTypeConfig = {
   resetPassword: {
     alertType: 'error',
@@ -171,6 +120,3 @@ export const isLoginFlagType = (value?: unknown): value is LoginFlagType => {
 
   return Object.keys(loginType).includes(value);
 };
-
-export const parseLoginFlagType = (value: unknown): LoginFlagType | undefined =>
-  isLoginFlagType(value) ? value : undefined;

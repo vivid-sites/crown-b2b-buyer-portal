@@ -1,5 +1,4 @@
 import { ChangeEvent, FC, MouseEvent, ReactElement, ReactNode, useContext, useState } from 'react';
-import { useB3Lang } from '@b3/lang';
 import {
   KeyboardArrowDown as KeyboardArrowDownIcon,
   KeyboardArrowRight as KeyboardArrowRightIcon,
@@ -22,6 +21,7 @@ import IconButton from '@mui/material/IconButton';
 import TableSortLabel from '@mui/material/TableSortLabel';
 
 import { useMobile } from '@/hooks';
+import { useB3Lang } from '@/lib/lang';
 import { CustomStyleContext } from '@/shared/customStyleButton';
 
 import { b3HexToRgb, getContrastColor } from '../outSideComponents/utils/b3CustomStyles';
@@ -44,7 +44,7 @@ export type WithRowControls<T> = T & {
   disableCurrentCheckbox?: boolean;
 };
 
-export interface Pagination {
+interface Pagination {
   offset: number;
   first: number;
   count: number;
@@ -346,6 +346,9 @@ export function B3Table<Row>({
           </Grid>
           {showPagination && (
             <TablePagination
+              labelDisplayedRows={({ from, to, count }) =>
+                b3Lang('global.pagination.pageXOfY', { from, to, count })
+              }
               rowsPerPageOptions={showRowsPerPageOptions ? rowsPerPageOptions : []}
               labelRowsPerPage={labelRowsPerPage || b3Lang('global.pagination.perPage')}
               component="div"
@@ -384,6 +387,9 @@ export function B3Table<Row>({
           </Grid>
           {showPagination && (
             <TablePagination
+              labelDisplayedRows={({ from, to, count }) =>
+                b3Lang('global.pagination.pageXOfY', { from, to, count })
+              }
               rowsPerPageOptions={showRowsPerPageOptions ? rowsPerPageOptions : []}
               labelRowsPerPage={labelRowsPerPage || b3Lang('global.pagination.cardsPerPage')}
               component="div"
@@ -506,6 +512,9 @@ export function B3Table<Row>({
           </TableContainer>
           {showPagination && (
             <TablePagination
+              labelDisplayedRows={({ from, to, count }) =>
+                b3Lang('global.pagination.pageXOfY', { from, to, count })
+              }
               rowsPerPageOptions={showRowsPerPageOptions ? rowsPerPageOptions : []}
               labelRowsPerPage={labelRowsPerPage || b3Lang('global.pagination.rowsPerPage')}
               component="div"

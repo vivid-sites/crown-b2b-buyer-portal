@@ -1,4 +1,4 @@
-import { LangFormatFunction } from '@b3/lang';
+import { LangFormatFunction } from '@/lib/lang';
 
 export interface Fields {
   bcLabel: string;
@@ -27,7 +27,7 @@ export interface Fields {
   disabled: boolean;
 }
 
-export interface BcFormFieldsProps {
+interface BcFormFieldsProps {
   name: string;
   value: any;
 }

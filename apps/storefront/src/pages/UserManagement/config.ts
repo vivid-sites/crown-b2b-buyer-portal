@@ -1,27 +1,8 @@
-import { LangFormatFunction } from '@b3/lang';
-
-import { CompanyInfoTypes } from '@/types';
+import { LangFormatFunction } from '@/lib/lang';
 
 interface ExtraFieldsProps {
   fieldName: string;
   fieldValue: string | number;
-}
-
-interface UsersListItems {
-  createdAt: number;
-  email: string;
-  firstName: string;
-  id: string;
-  lastName: string;
-  phone: string;
-  role: number;
-  companyRoleName: string;
-  companyRoleId: number | string;
-  updatedAt: number;
-  extraFields: ExtraFieldsProps[];
-  masqueradingCompanyId: number | string | null;
-  companyInfo: CompanyInfoTypes | null;
-  [key: string]: string | null | number | ExtraFieldsProps[] | CompanyInfoTypes;
 }
 
 interface FilterProps {
@@ -34,8 +15,6 @@ interface FilterProps {
   [key: string]: string | null | number | boolean | ExtraFieldsProps[];
 }
 
-type UsersList = UsersListItems;
-
 interface UsersFilesProps {
   [key: string]: string | boolean | number | Array<any> | boolean | undefined;
   name: string;
@@ -46,23 +25,6 @@ interface UserRoleProps {
   value: number;
   idLang: string;
   name: string;
-}
-
-interface RoleCompanyInfoProps {
-  id: number;
-  name: string;
-}
-
-interface RoleProps {
-  id: string;
-  name: string;
-  roleLevel: number;
-  roleType: number;
-  companyInfo: RoleCompanyInfoProps;
-}
-
-interface UserRoleListProps {
-  node: RoleProps;
 }
 
 const getUserRole = () => {
@@ -173,13 +135,4 @@ const emailError: EmailError = {
 
 export { emailError, getFilterMoreList, getUserRole, getUsersFiles };
 
-export type {
-  FilterProps,
-  UserRoleProps,
-  UsersFilesProps,
-  UsersList,
-  ExtraFieldsProps,
-  UserRoleListProps,
-  RoleCompanyInfoProps,
-  RoleProps,
-};
+export type { FilterProps, UsersFilesProps, ExtraFieldsProps };

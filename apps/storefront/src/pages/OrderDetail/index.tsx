@@ -1,12 +1,12 @@
 import { useContext, useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useB3Lang } from '@b3/lang';
 import { ArrowBackIosNew, InfoOutlined } from '@mui/icons-material';
 import { Box, Grid, Stack, Typography } from '@mui/material';
 
 import { b3HexToRgb, getContrastColor } from '@/components/outSideComponents/utils/b3CustomStyles';
 import B3Spin from '@/components/spin/B3Spin';
 import { useMobile } from '@/hooks';
+import { useB3Lang } from '@/lib/lang';
 import { CustomStyleContext } from '@/shared/customStyleButton';
 import { GlobalContext } from '@/shared/global';
 import {
@@ -32,8 +32,6 @@ import {
   OrderHistory,
   OrderShipping,
 } from './components';
-
-const convertBCOrderDetails = convertB2BOrderDetails;
 
 interface LocationState {
   isCompanyOrder: boolean;
@@ -67,7 +65,15 @@ function OrderDetail() {
   } = useContext(GlobalContext);
 
   const {
-    state: { poNumber, status = '', customStatus, orderSummary, orderStatus = [], products },
+    state: {
+      poNumber,
+      status = '',
+      customStatus,
+      orderSummary,
+      orderStatus = [],
+      products,
+      digitalProducts,
+    },
     state: detailsData,
     dispatch,
   } = useContext(OrderDetailsContext);
@@ -124,9 +130,7 @@ function OrderDetail() {
 
             setIsCurrentCompany(Number(companyInfo.companyId) === Number(currentCompanyId));
 
-            const data = isB2BUser
-              ? convertB2BOrderDetails(newOrder, b3Lang)
-              : convertBCOrderDetails(newOrder, b3Lang);
+            const data = convertB2BOrderDetails(newOrder, b3Lang);
             dispatch({
               type: 'all',
               payload: data,
@@ -353,8 +357,7 @@ function OrderDetail() {
             <Stack spacing={3}>
               <OrderShipping isCurrentCompany={isCurrentCompany} />
               {/* Digital Order Display */}
-              <OrderBilling isCurrentCompany={isCurrentCompany} />
-
+              {!!digitalProducts?.length && <OrderBilling isCurrentCompany={isCurrentCompany} />}
               <OrderHistory />
             </Stack>
           </Grid>

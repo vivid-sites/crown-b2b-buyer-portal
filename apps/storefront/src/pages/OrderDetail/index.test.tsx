@@ -1,4 +1,5 @@
 import { useParams } from 'react-router-dom';
+import { set } from 'lodash-es';
 import {
   buildCompanyStateWith,
   builder,
@@ -32,6 +33,7 @@ import {
 } from '@/shared/service/b2b/graphql/orders';
 import { CustomerRole, MoneyFormat } from '@/types';
 
+import { DigitalDownloadElementsResponse } from './components/getDigitalDownloadElements';
 import OrderDetails from '.';
 
 vi.mock('react-router-dom');
@@ -93,9 +95,12 @@ const usd: MoneyFormat = {
 };
 
 const buildProductOptionWith = builder<OrderProduct['product_options'][number]>(() => ({
+  id: faker.number.int(),
+  product_option_id: faker.number.int(),
   option_id: faker.number.int(),
   display_name: faker.word.noun(),
   display_value: faker.word.noun(),
+  value: faker.word.noun(),
 }));
 
 const buildProductWith = builder<OrderProduct>(() => ({
@@ -107,6 +112,7 @@ const buildProductWith = builder<OrderProduct>(() => ({
   price_inc_tax: faker.number.float({ min: 0, max: 200 }).toFixed(2),
   base_price: faker.number.float({ min: 0, max: 200 }).toFixed(2),
   productUrl: faker.internet.url(),
+  product_id: faker.number.int(),
   variant_id: faker.number.int(),
   imageUrl: faker.image.url(),
   product_options: bulk(buildProductOptionWith, 'WHATEVER_VALUES').times(3),
@@ -214,6 +220,33 @@ const buildCustomerOrderNodeWith = builder<CustomerOrderNode>(() => ({
   },
 }));
 
+const buildDigitalProductNodeWith = builder<DigitalDownloadElementsResponse>(() => ({
+  data: {
+    site: {
+      order: {
+        consignments: {
+          downloads: [
+            {
+              lineItems: {
+                edges: [
+                  {
+                    node: {
+                      downloadFileUrls: [faker.internet.url(), faker.internet.url()],
+                      downloadPageUrl: faker.internet.url(),
+                      name: faker.commerce.productName(),
+                      productEntityId: faker.number.int(),
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    },
+  },
+}));
+
 const buildGetCustomerOrdersWith = builder<GetCustomerOrders>(() => {
   const numberOfOrders = faker.number.int({ min: 1, max: 10 });
 
@@ -247,6 +280,39 @@ const buildShipmentWith = builder<Shipment>(() => ({
   tracking_number: faker.number.int().toString(),
   generated_tracking_link: faker.internet.url(),
 }));
+
+const buildCustomerShoppingListNodeWith = builder(() => ({
+  node: {
+    id: faker.number.int().toString(),
+    name: faker.lorem.word(),
+    description: faker.lorem.sentence(),
+    updatedAt: getUnixTime(faker.date.recent()),
+    products: {
+      totalCount: faker.number.int({ min: 0, max: 10 }),
+    },
+  },
+}));
+
+const buildCustomerShoppingListResponseWith = builder(() => {
+  const totalCount = faker.number.int({ min: 1, max: 10 });
+
+  return {
+    data: {
+      customerShoppingLists: {
+        totalCount,
+        pageInfo: {
+          hasNextPage: faker.datatype.boolean(),
+          hasPreviousPage: faker.datatype.boolean(),
+        },
+        edges: bulk(buildCustomerShoppingListNodeWith, 'WHATEVER_VALUES').times(totalCount),
+      },
+    },
+  };
+});
+
+beforeEach(() => {
+  set(window, 'b2b.callbacks.dispatchEvent', vi.fn());
+});
 
 describe('when a personal customer visits an order', () => {
   const preloadedState = {
@@ -717,6 +783,130 @@ describe('when a personal customer visits an order', () => {
       expect(screen.getByText('112')).toBeInTheDocument();
       expect(screen.getByText('€2.502,08')).toBeInTheDocument();
       expect(screen.getByText('Format: ePub')).toBeInTheDocument();
+    });
+
+    it('displays the view files link for digital products in an order', async () => {
+      const digitalProduct = buildProductWith({
+        name: 'Digital Product',
+        sku: 'DIGI-001',
+        price_ex_tax: '10.00',
+        quantity: 1,
+        product_options: [],
+        type: 'digital',
+        product_id: 1234,
+      });
+
+      const digitalNode = {
+        name: '',
+        downloadPageUrl: '',
+        downloadFileUrls: ['cat.com', 'meow.com'],
+        productEntityId: 1234,
+      };
+
+      const digitalDownloadElements = buildDigitalProductNodeWith({
+        data: {
+          site: {
+            order: {
+              consignments: {
+                downloads: [
+                  {
+                    lineItems: {
+                      edges: [{ node: { ...digitalNode } }],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      });
+
+      server.use(
+        graphql.query('GetCustomerOrder', () =>
+          HttpResponse.json(
+            buildCustomerOrderResponseWith({
+              data: {
+                customerOrder: {
+                  money: euro,
+                  products: [digitalProduct],
+                },
+              },
+            }),
+          ),
+        ),
+        graphql.query('GetDigitalDownloadLinks', () => HttpResponse.json(digitalDownloadElements)),
+      );
+
+      renderWithProviders(<OrderDetails />, { preloadedState });
+
+      await waitForElementToBeRemoved(() => screen.queryAllByRole('progressbar'));
+
+      expect(screen.getByText('Digital products')).toBeInTheDocument();
+      expect(await screen.findByText('View files')).toBeInTheDocument();
+      await userEvent.click(await screen.findByText('View files'));
+
+      // validate if digital files dialog is opened and renders a download button for each url
+      expect(screen.getByText('Files to download')).toBeInTheDocument();
+
+      await waitFor(() => {
+        expect(screen.getAllByRole('button', { name: 'Download' })).toHaveLength(2);
+      });
+    });
+
+    it('does not render the view files link for physical products and digital products with no file in an order', async () => {
+      const address = buildShippingAddressWith('WHATEVER_VALUES');
+      const physicalProduct = buildProductWith({
+        id: 123,
+        order_address_id: address.id,
+        name: 'Phone',
+        price_ex_tax: '100.00',
+        quantity: 2,
+        quantity_shipped: 2,
+        type: 'physical',
+      });
+      const digitalProduct = buildProductWith({
+        name: 'How to meow',
+        price_ex_tax: '10.00',
+        quantity: 1,
+        product_options: [],
+        type: 'digital',
+      });
+      const shipmentOfAllPhysicalProduct = buildShipmentWith({
+        id: 2,
+        shipping_method: 'Test Shipping',
+        order_address_id: address.id,
+        items: [
+          {
+            quantity: physicalProduct.quantity_shipped,
+            order_product_id: physicalProduct.id,
+          },
+        ],
+      });
+
+      server.use(
+        graphql.query('GetCustomerOrder', () =>
+          HttpResponse.json(
+            buildCustomerOrderResponseWith({
+              data: {
+                customerOrder: {
+                  money: euro,
+                  products: [physicalProduct, digitalProduct],
+                  shippingAddress: [address, buildShippingAddressWith('WHATEVER_VALUES')],
+                  shipments: [shipmentOfAllPhysicalProduct],
+                },
+              },
+            }),
+          ),
+        ),
+      );
+
+      renderWithProviders(<OrderDetails />, { preloadedState });
+
+      await waitForElementToBeRemoved(() => screen.queryAllByRole('progressbar'));
+
+      expect(await screen.findByText('Phone')).toBeInTheDocument();
+      expect(await screen.findByText('How to meow')).toBeInTheDocument();
+      expect(screen.queryByText('View files')).not.toBeInTheDocument();
     });
   });
 
@@ -1213,6 +1403,815 @@ describe('when a personal customer visits an order', () => {
       });
 
       expect(prev).toBeDisabled();
+    });
+  });
+
+  describe('when the customer wants to re-order', () => {
+    it('can re-order a single product', async () => {
+      const screamCanister = buildProductWith({ name: 'Scream Canister', quantity: 2 });
+      const laughCanister = buildProductWith({
+        name: 'Laugh Canister',
+        quantity: 1,
+        product_options: [buildProductOptionWith({ product_option_id: 22, value: 'bar' })],
+      });
+
+      const createCartSimple = vi.fn();
+
+      server.use(
+        graphql.query('GetCustomerOrderStatuses', () =>
+          HttpResponse.json(buildCustomerOrderStatusesWith('WHATEVER_VALUES')),
+        ),
+        graphql.query('AddressConfig', () =>
+          HttpResponse.json(buildAddressConfigResponseWith('WHATEVER_VALUES')),
+        ),
+        graphql.query('GetCustomerOrder', () =>
+          HttpResponse.json(
+            buildCustomerOrderResponseWith({
+              data: { customerOrder: { products: [screamCanister, laughCanister] } },
+            }),
+          ),
+        ),
+        graphql.query('getCart', () => HttpResponse.json({ data: { site: { cart: null } } })),
+        graphql.mutation('createCartSimple', ({ variables }) =>
+          HttpResponse.json(createCartSimple(variables)),
+        ),
+      );
+
+      when(createCartSimple)
+        .calledWith({
+          createCartInput: {
+            lineItems: [
+              {
+                quantity: 1,
+                productEntityId: laughCanister.product_id,
+                variantEntityId: laughCanister.variant_id,
+                selectedOptions: {
+                  multipleChoices: [],
+                  textFields: [{ optionEntityId: 22, text: 'bar' }],
+                },
+              },
+            ],
+          },
+        })
+        .thenReturn({ data: { cart: { createCart: { cart: { entityId: 'foo-bar' } } } } });
+
+      renderWithProviders(<OrderDetails />, { preloadedState });
+
+      await waitForElementToBeRemoved(() => screen.queryAllByRole('progressbar'));
+
+      await userEvent.click(screen.getByRole('button', { name: 'Re-Order' }));
+
+      const dialog = await screen.findByRole('dialog', { name: 'Re-Order' });
+
+      expect(
+        within(dialog).getByText('Select products and quantity for reorder'),
+      ).toBeInTheDocument();
+
+      const productGroup = within(dialog).getByRole('group', { name: 'Laugh Canister' });
+
+      await userEvent.click(within(productGroup).getByRole('checkbox'));
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Add to cart' }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Products are added to cart')).toBeInTheDocument();
+      });
+
+      expect(window.b2b.callbacks.dispatchEvent).toHaveBeenCalledWith('on-cart-created', {
+        cartId: 'foo-bar',
+      });
+    });
+
+    it('can adjust the quantity of a product', async () => {
+      const screamCanister = buildProductWith({
+        name: 'Scream Canister',
+        quantity: 1,
+        product_options: [],
+      });
+
+      const createCartSimple = vi.fn();
+
+      server.use(
+        graphql.query('GetCustomerOrderStatuses', () =>
+          HttpResponse.json(buildCustomerOrderStatusesWith('WHATEVER_VALUES')),
+        ),
+        graphql.query('AddressConfig', () =>
+          HttpResponse.json(buildAddressConfigResponseWith('WHATEVER_VALUES')),
+        ),
+        graphql.query('GetCustomerOrder', () =>
+          HttpResponse.json(
+            buildCustomerOrderResponseWith({
+              data: { customerOrder: { products: [screamCanister] } },
+            }),
+          ),
+        ),
+        graphql.query('getCart', () => HttpResponse.json({ data: { site: { cart: null } } })),
+        graphql.mutation('createCartSimple', ({ variables }) =>
+          HttpResponse.json(createCartSimple(variables)),
+        ),
+      );
+
+      when(createCartSimple)
+        .calledWith({
+          createCartInput: {
+            lineItems: [
+              {
+                quantity: 2,
+                productEntityId: screamCanister.product_id,
+                variantEntityId: screamCanister.variant_id,
+                selectedOptions: { multipleChoices: [], textFields: [] },
+              },
+            ],
+          },
+        })
+        .thenReturn({ data: { cart: { createCart: { cart: { entityId: 'foo-bar' } } } } });
+
+      renderWithProviders(<OrderDetails />, { preloadedState });
+
+      await waitForElementToBeRemoved(() => screen.queryAllByRole('progressbar'));
+
+      await userEvent.click(screen.getByRole('button', { name: 'Re-Order' }));
+
+      const dialog = await screen.findByRole('dialog', { name: 'Re-Order' });
+
+      expect(
+        within(dialog).getByText('Select products and quantity for reorder'),
+      ).toBeInTheDocument();
+
+      const productGroup = within(dialog).getByRole('group', { name: 'Scream Canister' });
+
+      await userEvent.click(within(productGroup).getByRole('checkbox'));
+
+      await userEvent.type(within(productGroup).getByRole('spinbutton'), '2', {
+        initialSelectionStart: 0,
+        initialSelectionEnd: 1,
+      });
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Add to cart' }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Products are added to cart')).toBeInTheDocument();
+      });
+
+      expect(window.b2b.callbacks.dispatchEvent).toHaveBeenCalledWith('on-cart-created', {
+        cartId: 'foo-bar',
+      });
+    });
+
+    it('can re-order all products in one go', async () => {
+      const screamCanister = buildProductWith({
+        name: 'Scream Canister',
+        quantity: 2,
+        product_options: [],
+      });
+      const laughCanister = buildProductWith({
+        name: 'Laugh Canister',
+        quantity: 1,
+        product_options: [],
+      });
+
+      const createCartSimple = vi.fn();
+
+      server.use(
+        graphql.query('GetCustomerOrderStatuses', () =>
+          HttpResponse.json(buildCustomerOrderStatusesWith('WHATEVER_VALUES')),
+        ),
+        graphql.query('AddressConfig', () =>
+          HttpResponse.json(buildAddressConfigResponseWith('WHATEVER_VALUES')),
+        ),
+        graphql.query('GetCustomerOrder', () =>
+          HttpResponse.json(
+            buildCustomerOrderResponseWith({
+              data: { customerOrder: { products: [screamCanister, laughCanister] } },
+            }),
+          ),
+        ),
+        graphql.query('getCart', () => HttpResponse.json({ data: { site: { cart: null } } })),
+        graphql.mutation('createCartSimple', ({ variables }) =>
+          HttpResponse.json(createCartSimple(variables)),
+        ),
+      );
+
+      when(createCartSimple)
+        .calledWith({
+          createCartInput: {
+            lineItems: [
+              {
+                quantity: 2,
+                productEntityId: screamCanister.product_id,
+                variantEntityId: screamCanister.variant_id,
+                selectedOptions: { multipleChoices: [], textFields: [] },
+              },
+              {
+                quantity: 1,
+                productEntityId: laughCanister.product_id,
+                variantEntityId: laughCanister.variant_id,
+                selectedOptions: { multipleChoices: [], textFields: [] },
+              },
+            ],
+          },
+        })
+        .thenReturn({ data: { cart: { createCart: { cart: { entityId: 'foo-bar' } } } } });
+
+      renderWithProviders(<OrderDetails />, { preloadedState });
+
+      await waitForElementToBeRemoved(() => screen.queryAllByRole('progressbar'));
+
+      await userEvent.click(screen.getByRole('button', { name: 'Re-Order' }));
+
+      const checkboxes = await screen.findAllByRole('checkbox');
+
+      await userEvent.click(checkboxes[0]); // Select all checkbox
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Add to cart' }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Products are added to cart')).toBeInTheDocument();
+      });
+
+      expect(window.b2b.callbacks.dispatchEvent).toHaveBeenCalledWith('on-cart-created', {
+        cartId: 'foo-bar',
+      });
+    });
+
+    it('shows a warning if no product is selected', async () => {
+      const screamCanister = buildProductWith({ name: 'Scream Canister', quantity: 2 });
+      const laughCanister = buildProductWith({ name: 'Laugh Canister', quantity: 1 });
+
+      server.use(
+        graphql.query('GetCustomerOrderStatuses', () =>
+          HttpResponse.json(buildCustomerOrderStatusesWith('WHATEVER_VALUES')),
+        ),
+        graphql.query('AddressConfig', () =>
+          HttpResponse.json(buildAddressConfigResponseWith('WHATEVER_VALUES')),
+        ),
+        graphql.query('GetCustomerOrder', () =>
+          HttpResponse.json(
+            buildCustomerOrderResponseWith({
+              data: { customerOrder: { products: [screamCanister, laughCanister] } },
+            }),
+          ),
+        ),
+      );
+
+      renderWithProviders(<OrderDetails />, { preloadedState });
+
+      await waitForElementToBeRemoved(() => screen.queryAllByRole('progressbar'));
+
+      await userEvent.click(screen.getByRole('button', { name: 'Re-Order' }));
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Add to cart' }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Please select at least one item')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('when the customer wants to add to a shopping list', () => {
+    it('can add a single product to an existing shopping list', async () => {
+      const screamCanister = buildProductWith({ name: 'Scream Canister', quantity: 2 });
+      const laughCanister = buildProductWith({
+        name: 'Laugh Canister',
+        quantity: 2,
+        product_id: 123,
+        variant_id: 456,
+        product_options: [buildProductOptionWith({ product_option_id: 22, value: 'bar' })],
+      });
+
+      const addItemsToCustomerShoppingList = vi.fn();
+
+      const shoppingList = buildCustomerShoppingListNodeWith({
+        node: { id: '992', name: 'Foo Bar Shopping List' },
+      });
+
+      server.use(
+        graphql.query('CustomerShoppingLists', () =>
+          HttpResponse.json(
+            buildCustomerShoppingListResponseWith({
+              data: { customerShoppingLists: { totalCount: 1, edges: [shoppingList] } },
+            }),
+          ),
+        ),
+        graphql.query('SearchProducts', () => HttpResponse.json({ data: { productsSearch: [] } })),
+        graphql.mutation('AddItemsToCustomerShoppingList', ({ query }) =>
+          HttpResponse.json(addItemsToCustomerShoppingList(query)),
+        ),
+      );
+
+      when(addItemsToCustomerShoppingList)
+        .calledWith(
+          stringContainingAll(
+            'productId: 123,',
+            'variantId: 456,',
+            'quantity: 2,',
+            '{optionId: "attribute[22]", optionValue: "bar" },',
+            'shoppingListId: 992,',
+          ),
+        )
+        .thenReturn({});
+
+      server.use(
+        graphql.query('GetCustomerOrderStatuses', () =>
+          HttpResponse.json(buildCustomerOrderStatusesWith('WHATEVER_VALUES')),
+        ),
+        graphql.query('AddressConfig', () =>
+          HttpResponse.json(buildAddressConfigResponseWith('WHATEVER_VALUES')),
+        ),
+        graphql.query('GetCustomerOrder', () =>
+          HttpResponse.json(
+            buildCustomerOrderResponseWith({
+              data: { customerOrder: { products: [screamCanister, laughCanister] } },
+            }),
+          ),
+        ),
+
+        graphql.query('CustomerShoppingLists', () =>
+          HttpResponse.json(
+            buildCustomerShoppingListResponseWith({
+              data: { customerShoppingLists: { totalCount: 1, edges: [shoppingList] } },
+            }),
+          ),
+        ),
+        graphql.query('SearchProducts', () =>
+          HttpResponse.json({
+            data: {
+              productsSearch: [
+                { optionsV3: [{ id: 114, option_values: [{ id: 103 }, { id: 104 }] }] },
+              ],
+            },
+          }),
+        ),
+        graphql.mutation('AddItemsToCustomerShoppingList', ({ query }) =>
+          HttpResponse.json(addItemsToCustomerShoppingList(query)),
+        ),
+      );
+
+      renderWithProviders(<OrderDetails />, {
+        preloadedState,
+        initialGlobalContext: { shoppingListEnabled: true },
+      });
+
+      await waitForElementToBeRemoved(() => screen.queryAllByRole('progressbar'));
+
+      await userEvent.click(screen.getByRole('button', { name: 'ADD TO SHOPPING LIST' }));
+
+      const dialog = await screen.findByRole('dialog', { name: 'Add to shopping list' });
+
+      expect(
+        within(dialog).getByText('Select products and quantity to add to shopping list'),
+      ).toBeInTheDocument();
+
+      const productGroup = within(dialog).getByRole('group', { name: 'Laugh Canister' });
+
+      await userEvent.click(within(productGroup).getByRole('checkbox'));
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Add to shopping list' }));
+
+      await userEvent.click(await screen.findByText('Foo Bar Shopping List'));
+
+      await userEvent.click(screen.getByText('OK'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Products were added to your shopping list')).toBeInTheDocument();
+      });
+    });
+
+    it('can add a product to a new shopping list', async () => {
+      const screamCanister = buildProductWith({ name: 'Scream Canister', quantity: 2 });
+      const laughCanister = buildProductWith({
+        name: 'Laugh Canister',
+        quantity: 2,
+        product_id: 123,
+        variant_id: 456,
+        product_options: [buildProductOptionWith({ product_option_id: 22, value: 'bar' })],
+      });
+
+      const addItemsToCustomerShoppingList = vi.fn();
+      const getCustomerShoppingLists = vi.fn().mockReturnValue(
+        buildCustomerShoppingListResponseWith({
+          data: { customerShoppingLists: { totalCount: 0, edges: [] } },
+        }),
+      );
+
+      when(addItemsToCustomerShoppingList)
+        .calledWith(
+          stringContainingAll(
+            'productId: 123,',
+            'variantId: 456,',
+            'quantity: 2,',
+            '{optionId: "attribute[22]", optionValue: "bar" },',
+            'shoppingListId: 992,',
+          ),
+        )
+        .thenReturn({});
+      const createCustomerShoppingList = vi.fn();
+
+      server.use(
+        graphql.query('GetCustomerOrderStatuses', () =>
+          HttpResponse.json(buildCustomerOrderStatusesWith('WHATEVER_VALUES')),
+        ),
+        graphql.query('AddressConfig', () =>
+          HttpResponse.json(buildAddressConfigResponseWith('WHATEVER_VALUES')),
+        ),
+        graphql.query('GetCustomerOrder', () =>
+          HttpResponse.json(
+            buildCustomerOrderResponseWith({
+              data: { customerOrder: { products: [screamCanister, laughCanister] } },
+            }),
+          ),
+        ),
+        graphql.query('CustomerShoppingLists', ({ query }) =>
+          HttpResponse.json(getCustomerShoppingLists(query)),
+        ),
+        graphql.query('SearchProducts', () => HttpResponse.json({ data: { productsSearch: [] } })),
+        graphql.mutation('AddItemsToCustomerShoppingList', ({ query }) =>
+          HttpResponse.json(addItemsToCustomerShoppingList(query)),
+        ),
+        graphql.mutation('CreateCustomerShoppingList', ({ variables }) =>
+          HttpResponse.json(createCustomerShoppingList(variables)),
+        ),
+      );
+
+      renderWithProviders(<OrderDetails />, {
+        preloadedState,
+        initialGlobalContext: { shoppingListEnabled: true },
+      });
+
+      await waitForElementToBeRemoved(() => screen.queryAllByRole('progressbar'));
+
+      await userEvent.click(screen.getByRole('button', { name: 'ADD TO SHOPPING LIST' }));
+
+      const dialog = await screen.findByRole('dialog', { name: 'Add to shopping list' });
+
+      const productGroup = within(dialog).getByRole('group', { name: 'Laugh Canister' });
+
+      await userEvent.click(within(productGroup).getByRole('checkbox'));
+
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Add to shopping list' }));
+
+      const createNewButton = await screen.findByRole('button', { name: 'Create new' });
+
+      await userEvent.click(createNewButton);
+
+      expect(await screen.findByRole('heading', { name: 'Create new' })).toBeInTheDocument();
+
+      const nameInput = screen.getByRole('textbox', { name: 'Name' });
+      const descriptionInput = screen.getByRole('textbox', { name: 'Description' });
+
+      await userEvent.type(nameInput, 'New Shopping List');
+      await userEvent.type(descriptionInput, 'This is a new shopping list');
+
+      const shoppingList = buildCustomerShoppingListNodeWith({
+        node: { id: '992', name: 'New Shopping List' },
+      });
+
+      when(createCustomerShoppingList)
+        .calledWith({
+          shoppingListData: {
+            name: 'New Shopping List',
+            description: 'This is a new shopping list',
+            channelId: 1,
+          },
+        })
+        .thenResolve({});
+
+      when(getCustomerShoppingLists, { times: 1 })
+        .calledWith(stringContainingAll('first: 50', 'channelId: 1'))
+        .thenReturn(
+          buildCustomerShoppingListResponseWith({
+            data: { customerShoppingLists: { totalCount: 0, edges: [shoppingList] } },
+          }),
+        );
+
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+      await userEvent.click(await screen.findByText('New Shopping List'));
+
+      await userEvent.click(screen.getByRole('button', { name: 'OK' }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Products were added to your shopping list')).toBeInTheDocument();
+      });
+    });
+
+    it('can adjust the quantity of a product', async () => {
+      const screamCanister = buildProductWith({ name: 'Scream Canister', quantity: 2 });
+      const laughCanister = buildProductWith({
+        name: 'Laugh Canister',
+        quantity: 1,
+        product_id: 123,
+        variant_id: 456,
+        product_options: [buildProductOptionWith({ product_option_id: 22, value: 'bar' })],
+      });
+
+      const addItemsToCustomerShoppingList = vi.fn();
+
+      const shoppingList = buildCustomerShoppingListNodeWith({
+        node: { id: '992', name: 'Foo Bar Shopping List' },
+      });
+
+      server.use(
+        graphql.query('CustomerShoppingLists', () =>
+          HttpResponse.json(
+            buildCustomerShoppingListResponseWith({
+              data: { customerShoppingLists: { totalCount: 1, edges: [shoppingList] } },
+            }),
+          ),
+        ),
+        graphql.query('SearchProducts', () => HttpResponse.json({ data: { productsSearch: [] } })),
+        graphql.mutation('AddItemsToCustomerShoppingList', ({ query }) =>
+          HttpResponse.json(addItemsToCustomerShoppingList(query)),
+        ),
+      );
+
+      when(addItemsToCustomerShoppingList)
+        .calledWith(
+          stringContainingAll(
+            'productId: 123,',
+            'variantId: 456,',
+            'quantity: 2,',
+            '{optionId: "attribute[22]", optionValue: "bar" },',
+            'shoppingListId: 992,',
+          ),
+        )
+        .thenReturn({});
+
+      server.use(
+        graphql.query('GetCustomerOrderStatuses', () =>
+          HttpResponse.json(buildCustomerOrderStatusesWith('WHATEVER_VALUES')),
+        ),
+        graphql.query('AddressConfig', () =>
+          HttpResponse.json(buildAddressConfigResponseWith('WHATEVER_VALUES')),
+        ),
+        graphql.query('GetCustomerOrder', () =>
+          HttpResponse.json(
+            buildCustomerOrderResponseWith({
+              data: { customerOrder: { products: [screamCanister, laughCanister] } },
+            }),
+          ),
+        ),
+        graphql.query('CustomerShoppingLists', () =>
+          HttpResponse.json(
+            buildCustomerShoppingListResponseWith({
+              data: { customerShoppingLists: { totalCount: 1, edges: [shoppingList] } },
+            }),
+          ),
+        ),
+        graphql.query('SearchProducts', () => HttpResponse.json({ data: { productsSearch: [] } })),
+        graphql.mutation('AddItemsToCustomerShoppingList', ({ query }) =>
+          HttpResponse.json(addItemsToCustomerShoppingList(query)),
+        ),
+      );
+
+      renderWithProviders(<OrderDetails />, {
+        preloadedState,
+        initialGlobalContext: { shoppingListEnabled: true },
+      });
+
+      await waitForElementToBeRemoved(() => screen.queryAllByRole('progressbar'));
+
+      await userEvent.click(screen.getByRole('button', { name: 'ADD TO SHOPPING LIST' }));
+
+      const dialog = await screen.findByRole('dialog', { name: 'Add to shopping list' });
+
+      expect(
+        within(dialog).getByText('Select products and quantity to add to shopping list'),
+      ).toBeInTheDocument();
+
+      const productGroup = within(dialog).getByRole('group', { name: 'Laugh Canister' });
+
+      await userEvent.click(within(productGroup).getByRole('checkbox'));
+
+      await userEvent.type(within(productGroup).getByRole('spinbutton'), '2', {
+        initialSelectionStart: 0,
+        initialSelectionEnd: 1,
+      });
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Add to shopping list' }));
+
+      await userEvent.click(await screen.findByText('Foo Bar Shopping List'));
+
+      await userEvent.click(screen.getByText('OK'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Products were added to your shopping list')).toBeInTheDocument();
+      });
+    });
+
+    it('can add all the products in one go', async () => {
+      const screamCanister = buildProductWith({
+        name: 'Scream Canister',
+        quantity: 2,
+        product_id: 789,
+        variant_id: 1011,
+        product_options: [],
+      });
+      const laughCanister = buildProductWith({
+        name: 'Laugh Canister',
+        quantity: 1,
+        product_id: 123,
+        variant_id: 456,
+        product_options: [],
+      });
+
+      const addItemsToCustomerShoppingList = vi.fn();
+
+      const shoppingList = buildCustomerShoppingListNodeWith({
+        node: { id: '992', name: 'Foo Bar Shopping List' },
+      });
+
+      server.use(
+        graphql.query('CustomerShoppingLists', () =>
+          HttpResponse.json(
+            buildCustomerShoppingListResponseWith({
+              data: { customerShoppingLists: { totalCount: 1, edges: [shoppingList] } },
+            }),
+          ),
+        ),
+        graphql.query('SearchProducts', () => HttpResponse.json({ data: { productsSearch: [] } })),
+        graphql.mutation('AddItemsToCustomerShoppingList', ({ query }) =>
+          HttpResponse.json(addItemsToCustomerShoppingList(query)),
+        ),
+      );
+
+      when(addItemsToCustomerShoppingList)
+        .calledWith(
+          stringContainingAll(
+            'productId: 123,',
+            'variantId: 456,',
+            'quantity: 1,',
+
+            'productId: 789,',
+            'variantId: 1011,',
+            'quantity: 2,',
+
+            'shoppingListId: 992,',
+          ),
+        )
+        .thenReturn({});
+
+      server.use(
+        graphql.query('GetCustomerOrderStatuses', () =>
+          HttpResponse.json(buildCustomerOrderStatusesWith('WHATEVER_VALUES')),
+        ),
+        graphql.query('AddressConfig', () =>
+          HttpResponse.json(buildAddressConfigResponseWith('WHATEVER_VALUES')),
+        ),
+        graphql.query('GetCustomerOrder', () =>
+          HttpResponse.json(
+            buildCustomerOrderResponseWith({
+              data: { customerOrder: { products: [screamCanister, laughCanister] } },
+            }),
+          ),
+        ),
+
+        graphql.query('CustomerShoppingLists', () =>
+          HttpResponse.json(
+            buildCustomerShoppingListResponseWith({
+              data: { customerShoppingLists: { totalCount: 1, edges: [shoppingList] } },
+            }),
+          ),
+        ),
+        graphql.query('SearchProducts', () => HttpResponse.json({ data: { productsSearch: [] } })),
+        graphql.mutation('AddItemsToCustomerShoppingList', ({ query }) =>
+          HttpResponse.json(addItemsToCustomerShoppingList(query)),
+        ),
+      );
+
+      renderWithProviders(<OrderDetails />, {
+        preloadedState,
+        initialGlobalContext: { shoppingListEnabled: true },
+      });
+
+      await waitForElementToBeRemoved(() => screen.queryAllByRole('progressbar'));
+
+      await userEvent.click(screen.getByRole('button', { name: 'ADD TO SHOPPING LIST' }));
+
+      const dialog = await screen.findByRole('dialog', { name: 'Add to shopping list' });
+
+      const checkboxes = await within(dialog).findAllByRole('checkbox');
+
+      await userEvent.click(checkboxes[0]); // Select all checkbox
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Add to shopping list' }));
+
+      await userEvent.click(await screen.findByText('Foo Bar Shopping List'));
+
+      await userEvent.click(screen.getByText('OK'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Products were added to your shopping list')).toBeInTheDocument();
+      });
+    });
+
+    it('can add all products in one go', async () => {
+      const screamCanister = buildProductWith({
+        name: 'Scream Canister',
+        quantity: 2,
+        product_options: [],
+      });
+      const laughCanister = buildProductWith({
+        name: 'Laugh Canister',
+        quantity: 1,
+        product_options: [],
+      });
+
+      const createCartSimple = vi.fn();
+
+      server.use(
+        graphql.query('GetCustomerOrderStatuses', () =>
+          HttpResponse.json(buildCustomerOrderStatusesWith('WHATEVER_VALUES')),
+        ),
+        graphql.query('AddressConfig', () =>
+          HttpResponse.json(buildAddressConfigResponseWith('WHATEVER_VALUES')),
+        ),
+        graphql.query('GetCustomerOrder', () =>
+          HttpResponse.json(
+            buildCustomerOrderResponseWith({
+              data: { customerOrder: { products: [screamCanister, laughCanister] } },
+            }),
+          ),
+        ),
+        graphql.query('getCart', () => HttpResponse.json({ data: { site: { cart: null } } })),
+        graphql.mutation('createCartSimple', ({ variables }) =>
+          HttpResponse.json(createCartSimple(variables)),
+        ),
+      );
+
+      when(createCartSimple)
+        .calledWith({
+          createCartInput: {
+            lineItems: [
+              {
+                quantity: 2,
+                productEntityId: screamCanister.product_id,
+                variantEntityId: screamCanister.variant_id,
+                selectedOptions: { multipleChoices: [], textFields: [] },
+              },
+              {
+                quantity: 1,
+                productEntityId: laughCanister.product_id,
+                variantEntityId: laughCanister.variant_id,
+                selectedOptions: { multipleChoices: [], textFields: [] },
+              },
+            ],
+          },
+        })
+        .thenReturn({ data: { cart: { createCart: { cart: { entityId: 'foo-bar' } } } } });
+
+      renderWithProviders(<OrderDetails />, { preloadedState });
+
+      await waitForElementToBeRemoved(() => screen.queryAllByRole('progressbar'));
+
+      await userEvent.click(screen.getByRole('button', { name: 'Re-Order' }));
+
+      const checkboxes = await screen.findAllByRole('checkbox');
+
+      await userEvent.click(checkboxes[0]); // Select all checkbox
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Add to cart' }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Products are added to cart')).toBeInTheDocument();
+      });
+
+      expect(window.b2b.callbacks.dispatchEvent).toHaveBeenCalledWith('on-cart-created', {
+        cartId: 'foo-bar',
+      });
+    });
+
+    it('shows a warning if no product is selected', async () => {
+      const screamCanister = buildProductWith({ name: 'Scream Canister', quantity: 2 });
+      const laughCanister = buildProductWith({ name: 'Laugh Canister', quantity: 1 });
+
+      server.use(
+        graphql.query('GetCustomerOrderStatuses', () =>
+          HttpResponse.json(buildCustomerOrderStatusesWith('WHATEVER_VALUES')),
+        ),
+        graphql.query('AddressConfig', () =>
+          HttpResponse.json(buildAddressConfigResponseWith('WHATEVER_VALUES')),
+        ),
+        graphql.query('GetCustomerOrder', () =>
+          HttpResponse.json(
+            buildCustomerOrderResponseWith({
+              data: { customerOrder: { products: [screamCanister, laughCanister] } },
+            }),
+          ),
+        ),
+      );
+
+      renderWithProviders(<OrderDetails />, { preloadedState });
+
+      await waitForElementToBeRemoved(() => screen.queryAllByRole('progressbar'));
+
+      await userEvent.click(screen.getByRole('button', { name: 'Re-Order' }));
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Add to cart' }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Please select at least one item')).toBeInTheDocument();
+      });
     });
   });
 });

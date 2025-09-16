@@ -1,9 +1,9 @@
 import { ChangeEvent, MouseEvent, ReactElement, useContext } from 'react';
-import { useB3Lang } from '@b3/lang';
 import { Grid, TablePagination } from '@mui/material';
 
 import { b3HexToRgb, getContrastColor } from '@/components/outSideComponents/utils/b3CustomStyles';
 import { useMobile } from '@/hooks';
+import { useB3Lang } from '@/lib/lang';
 import { CustomStyleContext } from '@/shared/customStyleButton';
 
 import B3NoData from './B3NoData';
@@ -24,7 +24,7 @@ export type WithRowControls<T> = T & {
   disableCurrentCheckbox?: boolean;
 };
 
-export interface Pagination {
+interface Pagination {
   offset: number;
   first: number;
   count: number;
@@ -106,6 +106,9 @@ export function B3Table<Row>({
           </Grid>
 
           <TablePagination
+            labelDisplayedRows={({ from, to, count }) =>
+              b3Lang('global.pagination.pageXOfY', { from, to, count })
+            }
             rowsPerPageOptions={showRowsPerPageOptions ? rowsPerPageOptions : []}
             labelRowsPerPage={b3Lang('global.pagination.perPage')}
             component="div"
@@ -143,6 +146,9 @@ export function B3Table<Row>({
           </Grid>
 
           <TablePagination
+            labelDisplayedRows={({ from, to, count }) =>
+              b3Lang('global.pagination.pageXOfY', { from, to, count })
+            }
             rowsPerPageOptions={showRowsPerPageOptions ? rowsPerPageOptions : []}
             labelRowsPerPage={b3Lang('global.pagination.cardsPerPage')}
             component="div"

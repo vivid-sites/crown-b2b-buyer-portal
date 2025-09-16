@@ -44,5 +44,3 @@ export const isUserGotoLogin = async (gotoUrl: string) => {
 
   return isGotoLogin;
 };
-
-export default {};

@@ -1,6 +1,7 @@
 // Does it make sense for someone without purchase permissions, shopping list disabled, and quote disabled to be able to access QuickOrder?
 
 import Cookies from 'js-cookie';
+import { set } from 'lodash-es';
 import {
   buildCompanyStateWith,
   builder,
@@ -222,15 +223,7 @@ const storeInfoWithDateFormat = buildStoreInfoStateWith({ timeFormat: { display:
 const preloadedState = { company: approvedB2BCompany, storeInfo: storeInfoWithDateFormat };
 
 beforeEach(() => {
-  /* @ts-expect-error This object is not complete, it only includes the properties required for this test file */
-  window.b2b = { callbacks: { dispatchEvent: vi.fn() } };
-});
-
-afterEach(() => {
-  // @ts-expect-error Removing the b2b object to avoid conflicts in other tests
-  delete window.b2b;
-
-  Cookies.remove('cartId');
+  set(window, 'b2b.callbacks.dispatchEvent', vi.fn());
 });
 
 it('displays a table with product information', async () => {
@@ -1633,5 +1626,70 @@ describe('has no purchased products', () => {
 
     expect(await screen.findByText('0 products')).toBeInTheDocument();
     expect(await screen.findByText('No products found')).toBeInTheDocument();
+  });
+});
+
+describe('when adding to quote', () => {
+  it('click add to quote and it gets added to draft quote', async () => {
+    const getRecentlyOrderedProducts = vi.fn();
+    const searchProducts = vi.fn<(...arg: unknown[]) => SearchProductsResponse>();
+    const laughCanister = buildRecentlyOrderedProductNodeWith({
+      node: { productName: 'Laugh Canister' },
+    });
+
+    when(getRecentlyOrderedProducts)
+      .calledWith(stringContainingAll('first: 12', 'offset: 0', 'orderBy: "-lastOrderedAt"'))
+      .thenReturn(
+        buildGetRecentlyOrderedProductsWith({
+          data: { orderedProducts: { totalCount: 1, edges: [laughCanister] } },
+        }),
+      );
+
+    when(searchProducts)
+      .calledWith(stringContainingAll(`productIds: [${laughCanister.node.productId}]`))
+      .thenReturn({
+        data: {
+          productsSearch: [
+            buildSearchProductWith({
+              id: Number(laughCanister.node.productId),
+              sku: 'SKU-123',
+              orderQuantityMaximum: 5,
+              orderQuantityMinimum: 0,
+              inventoryTracking: 'none',
+              variants: [buildVariantWith({ sku: laughCanister.node.variantSku })],
+            }),
+          ],
+        },
+      });
+
+    server.use(
+      graphql.query('RecentlyOrderedProducts', ({ query }) =>
+        HttpResponse.json(getRecentlyOrderedProducts(query)),
+      ),
+      graphql.query('SearchProducts', ({ query }) => HttpResponse.json(searchProducts(query))),
+      graphql.query('getCart', () => HttpResponse.json(buildGetCartWith('WHATEVER_VALUES'))),
+    );
+
+    renderWithProviders(<QuickOrder />, {
+      preloadedState,
+      initialGlobalContext: { productQuoteEnabled: true, shoppingListEnabled: true },
+    });
+
+    const row = await screen.findByRole('row', { name: /Laugh Canister/ });
+
+    await userEvent.click(within(row).getByRole('checkbox'));
+
+    const input = within(row).getByRole('spinbutton');
+
+    await userEvent.clear(input);
+    await userEvent.type(input, '4');
+
+    const addButton = screen.getByRole('button', { name: 'Add selected to' });
+
+    await userEvent.click(addButton);
+
+    await userEvent.click(screen.getByRole('menuitem', { name: /Add selected to quote/ }));
+
+    expect(await screen.findByText('Products were added to your quote')).toBeInTheDocument();
   });
 });

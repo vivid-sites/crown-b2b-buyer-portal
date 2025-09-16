@@ -5,6 +5,7 @@
 
 <div align="center">
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/bigcommerce/b2b-buyer-portal)
 [![MIT License](https://img.shields.io/github/license/bigcommerce/catalyst)](LICENSE.md)
 [![Lighthouse Report](https://github.com/bigcommerce/catalyst/actions/workflows/lighthouse.yml/badge.svg)](https://github.com/bigcommerce/catalyst/actions/workflows/lighthouse.yml) [![Lint, Typecheck, gql.tada](https://github.com/bigcommerce/catalyst/actions/workflows/basic.yml/badge.svg)](https://github.com/bigcommerce/catalyst/actions/workflows/basic.yml)
 
@@ -114,6 +115,12 @@ Read the [Stencil Guide](./docs/stencil.md) when you are working on the BigComme
 ### [Developing for Headless](./docs/headless.md)
 
 Read the [Headless Guide](./docs/headless.md) when you are working on Catalyst, NextJS and other headless storefronts
+
+### Releases
+
+1. Upon merging your pull request, this repository will automatically deploy your changes to the production environment.
+
+2. You can access the release pipeline at: https://launchbay.bigcommerce.net/projects/515/releases/new
 
 ### Common issues:
 

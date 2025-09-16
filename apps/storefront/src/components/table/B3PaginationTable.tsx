@@ -23,9 +23,13 @@ import {
   WithRowControls,
 } from './B3Table';
 
-export interface TablePagination {
+interface TablePagination {
   offset: number;
   first: number;
+}
+
+export interface TableRefreshConfig {
+  keepCheckedItems?: boolean;
 }
 
 interface GetRequestListResult<T extends object> {
@@ -173,7 +177,7 @@ function PaginationTable<GetRequestListParams, Row extends object>(
   );
 
   const fetchList = useCallback(
-    async (b3Pagination?: TablePagination, isRefresh?: boolean) => {
+    async (b3Pagination?: TablePagination, isRefresh?: boolean, config?: TableRefreshConfig) => {
       try {
         if (cache?.current && isEqual(cache.current, searchParams) && !isRefresh && !b3Pagination) {
           return;
@@ -206,7 +210,7 @@ function PaginationTable<GetRequestListParams, Row extends object>(
 
         cacheList(edges);
 
-        if (!isSelectOtherPageCheckbox) setSelectCheckbox([]);
+        if (!isSelectOtherPageCheckbox && config?.keepCheckedItems !== true) setSelectCheckbox([]);
 
         if (!b3Pagination) {
           setPagination({
@@ -233,9 +237,12 @@ function PaginationTable<GetRequestListParams, Row extends object>(
     ],
   );
 
-  const refresh = useCallback(() => {
-    fetchList(pagination, true);
-  }, [fetchList, pagination]);
+  const refresh = useCallback(
+    (config?: TableRefreshConfig) => {
+      fetchList(pagination, true, config);
+    },
+    [fetchList, pagination],
+  );
 
   useEffect(() => {
     const isChangeCompany =
