@@ -10,6 +10,7 @@
   "scripts": {
     "build": "turbo run build",
     "build:staging": "turbo run build:staging",
+    "build:dev": "turbo run build:dev",
     "dev": "turbo run dev --parallel",
     "lint": "turbo run lint --parallel --continue",
     "format": "turbo run format --parallel --continue",
