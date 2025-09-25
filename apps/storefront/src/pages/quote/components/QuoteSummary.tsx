@@ -15,6 +15,7 @@ import { currencyFormat } from '@/utils';
 import { getBCPrice } from '@/utils/b3Product/b3Product';
 
 import getQuoteDraftShowPriceTBD from '../shared/utils';
+import { CustomerRole } from '@/types';
 
 interface Summary {
   subtotal: number;
@@ -32,6 +33,8 @@ const defaultSummary: Summary = {
 
 const QuoteSummary = forwardRef((_, ref: Ref<unknown>) => {
   const b3Lang = useB3Lang();
+
+  const role = useAppSelector(({ company }) => company.customer.role);
 
   const [quoteSummary, setQuoteSummary] = useState<Summary>({
     ...defaultSummary,
@@ -119,7 +122,7 @@ const QuoteSummary = forwardRef((_, ref: Ref<unknown>) => {
               }}
             >
               <Typography>{b3Lang('quoteDraft.quoteSummary.subTotal')}</Typography>
-              <Typography>{showPrice(priceFormat(quoteSummary.subtotal))}</Typography>
+              <Typography>{role === CustomerRole.GUEST ? b3Lang('quoteDraft.quoteSummary.tbd') : showPrice(priceFormat(quoteSummary.subtotal))}</Typography>
             </Grid>
 
             <Grid
@@ -141,7 +144,7 @@ const QuoteSummary = forwardRef((_, ref: Ref<unknown>) => {
               }}
             >
               <Typography>{b3Lang('quoteDraft.quoteSummary.tax')}</Typography>
-              <Typography>{showPrice(priceFormat(quoteSummary.tax))}</Typography>
+              <Typography>{role === CustomerRole.GUEST ? b3Lang('quoteDraft.quoteSummary.tbd') : showPrice(priceFormat(quoteSummary.tax))}</Typography>
             </Grid>
 
             <Grid
@@ -163,7 +166,7 @@ const QuoteSummary = forwardRef((_, ref: Ref<unknown>) => {
                   fontWeight: 'bold',
                 }}
               >
-                {showPrice(priceFormat(quoteSummary.grandTotal))}
+                {role === CustomerRole.GUEST ? b3Lang('quoteDraft.quoteSummary.tbd') : showPrice(priceFormat(quoteSummary.grandTotal))}
               </Typography>
             </Grid>
           </Box>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Delete, Edit, Warning as WarningIcon } from '@mui/icons-material';
 import { Box, styled, TextField, Typography } from '@mui/material';
 import ceil from 'lodash-es/ceil';
@@ -10,11 +10,12 @@ import { useFeatureFlags } from '@/hooks';
 import { useB3Lang } from '@/lib/lang';
 import {
   deleteProductFromDraftQuoteList,
+  isB2BUserSelector,
   setDraftProduct,
   useAppDispatch,
   useAppSelector,
 } from '@/store';
-import { Product } from '@/types';
+import { CustomerRole, Product } from '@/types';
 import { QuoteItem } from '@/types/quotes';
 import { currencyFormat, snackbar } from '@/utils';
 import {
@@ -78,6 +79,8 @@ function QuoteTable(props: ShoppingDetailTableProps) {
   const b3Lang = useB3Lang();
   const dispatch = useAppDispatch();
   const featureFlags = useFeatureFlags();
+
+  const role = useAppSelector(({ company }) => company.customer.role);
 
   const [isRequestLoading, setIsRequestLoading] = useState(false);
   const [chooseOptionsOpen, setSelectedOptionsOpen] = useState(false);
@@ -338,7 +341,7 @@ function QuoteTable(props: ShoppingDetailTableProps) {
               padding: '12px 0',
             }}
           >
-            {getDisplayPrice({
+            {role === CustomerRole.GUEST ? '-' : getDisplayPrice({
               price: currencyFormat(inTaxPrice),
               productInfo: row,
               showText: b3Lang('quoteDraft.quoteSummary.tbd'),
@@ -398,7 +401,7 @@ function QuoteTable(props: ShoppingDetailTableProps) {
                 padding: '12px 0',
               }}
             >
-              {getDisplayPrice({
+              {role === CustomerRole.GUEST ? '-' : getDisplayPrice({
                 price: currencyFormat(total),
                 productInfo: row,
                 showText: b3Lang('quoteDraft.quoteSummary.tbd'),
