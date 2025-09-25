@@ -10,7 +10,7 @@ import { useAppSelector } from '@/store';
 import { currencyFormat, ordersCurrencyFormat } from '@/utils';
 import { getDisplayPrice, judgmentBuyerProduct } from '@/utils/b3Product/b3Product';
 
-import { MoneyFormat, ProductItem } from '../types';
+import { CustomerRole, MoneyFormat, ProductItem } from '../types';
 
 interface FlexProps {
   isHeader?: boolean;
@@ -150,6 +150,8 @@ export default function B3ProductList<T>(props: ProductProps<T>) {
   const [isMobile] = useMobile();
   const b3Lang = useB3Lang();
   const showInclusiveTaxPrice = useAppSelector(({ global }) => global.showInclusiveTaxPrice);
+
+  const role = useAppSelector(({ company }) => company.customer.role);
 
   const getQuantity = (product: any) => parseInt(product[quantityKey]?.toString() || '', 10) || '';
 
@@ -338,6 +340,7 @@ export default function B3ProductList<T>(props: ProductProps<T>) {
                   : {}
               }
             >
+              {role !== CustomerRole.GUEST ? ( 
               <Box
                 sx={{
                   display: 'flex',
@@ -365,7 +368,19 @@ export default function B3ProductList<T>(props: ProductProps<T>) {
                     {getDisplayPrice(priceDiscountedValue)}
                   </Box>
                 ) : null}
-              </Box>
+              </Box>)
+              : <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-end',
+                    justifyContent: textAlign === 'right' ? 'flex-end' : 'flex-start',
+                  }}
+                >
+                  {isMobile && <span>{priceLabel}: </span>}
+                  <span id="product-price">-</span>
+                </Box>
+              }
             </FlexItem>
           );
         };
