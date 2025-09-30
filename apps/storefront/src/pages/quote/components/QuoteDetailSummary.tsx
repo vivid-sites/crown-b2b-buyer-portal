@@ -3,6 +3,7 @@ import { Box, Card, CardContent, Grid, Typography } from '@mui/material';
 import { useB3Lang } from '@/lib/lang';
 import { useAppSelector } from '@/store';
 import { currencyFormatConvert } from '@/utils';
+import { CustomerRole } from '@/types';
 
 interface Summary {
   originalSubtotal: string | number;
@@ -32,6 +33,8 @@ export default function QuoteDetailSummary({
     ({ storeConfigs }) => storeConfigs.currencies.enteredInclusiveTax,
   );
   const showInclusiveTaxPrice = useAppSelector(({ global }) => global.showInclusiveTaxPrice);
+
+  const role = useAppSelector(({ company }) => company.customer.role);
 
   const getCurrentPrice = (price: number, quoteDetailTax: number) => {
     if (enteredInclusiveTax) {
@@ -117,7 +120,7 @@ export default function QuoteDetailSummary({
               >
                 <Typography>{b3Lang('quoteDetail.summary.originalSubtotal')}</Typography>
                 <Typography>
-                  {showPrice(priceFormat(getCurrentPrice(subtotalPrice, quoteDetailTax)))}
+                  {role === CustomerRole.GUEST ? b3Lang('quoteDraft.quoteSummary.tbd') : showPrice(priceFormat(getCurrentPrice(subtotalPrice, quoteDetailTax)))}
                 </Typography>
               </Grid>
             )}
@@ -133,9 +136,9 @@ export default function QuoteDetailSummary({
               >
                 <Typography>{b3Lang('quoteDetail.summary.discountAmount')}</Typography>
                 <Typography>
-                  {Number(discount) > 0
+                  {role === CustomerRole.GUEST ? b3Lang('quoteDraft.quoteSummary.tbd') : (Number(discount) > 0
                     ? `-${priceFormat(Number(discount))}`
-                    : priceFormat(Number(discount))}
+                    : priceFormat(Number(discount)))}
                 </Typography>
               </Grid>
             )}
@@ -161,7 +164,7 @@ export default function QuoteDetailSummary({
                   color: '#212121',
                 }}
               >
-                {showPrice(priceFormat(getCurrentPrice(quotedSubtotal, quoteDetailTax)))}
+                {role === CustomerRole.GUEST ? b3Lang('quoteDraft.quoteSummary.tbd') : showPrice(priceFormat(getCurrentPrice(quotedSubtotal, quoteDetailTax)))}
               </Typography>
             </Grid>
 
@@ -182,7 +185,7 @@ export default function QuoteDetailSummary({
                   >
                     {shippingAndTax.shippingText}
                   </Typography>
-                  <Typography>{showPrice(shippingAndTax.shippingVal)}</Typography>
+                  <Typography>{role === CustomerRole.GUEST ? b3Lang('quoteDraft.quoteSummary.tbd') : showPrice(shippingAndTax.shippingVal)}</Typography>
                 </Grid>
                 <Grid
                   container
@@ -192,7 +195,7 @@ export default function QuoteDetailSummary({
                   }}
                 >
                   <Typography>{shippingAndTax.taxText}</Typography>
-                  <Typography>{showPrice(shippingAndTax.taxVal)}</Typography>
+                  <Typography>{role === CustomerRole.GUEST ? b3Lang('quoteDraft.quoteSummary.tbd') : showPrice(shippingAndTax.taxVal)}</Typography>
                 </Grid>
               </>
             )}
@@ -218,7 +221,7 @@ export default function QuoteDetailSummary({
                   color: '#212121',
                 }}
               >
-                {showPrice(priceFormat(Number(totalAmount)))}
+                {role === CustomerRole.GUEST ? b3Lang('quoteDraft.quoteSummary.tbd') : showPrice(priceFormat(Number(totalAmount)))}
               </Typography>
             </Grid>
           </Box>

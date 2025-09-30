@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Delete, Edit, Warning as WarningIcon } from '@mui/icons-material';
 import { Box, styled, TextField, Typography } from '@mui/material';
 import ceil from 'lodash-es/ceil';
@@ -10,7 +10,6 @@ import { useFeatureFlags } from '@/hooks';
 import { useB3Lang } from '@/lib/lang';
 import {
   deleteProductFromDraftQuoteList,
-  isB2BUserSelector,
   setDraftProduct,
   useAppDispatch,
   useAppSelector,

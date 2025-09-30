@@ -10,6 +10,7 @@ import { currencyFormatConvert } from '@/utils';
 import { getBCPrice, getDisplayPrice } from '@/utils/b3Product/b3Product';
 
 import QuoteDetailTableCard from './QuoteDetailTableCard';
+import { CustomerRole } from '@/types';
 
 interface ProductInfoProps {
   basePrice: number | string;
@@ -100,6 +101,8 @@ function QuoteDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>) {
   const b3Lang = useB3Lang();
   const { total, getQuoteTableDetails, getTaxRate, isHandleApprove, displayDiscount, currency } =
     props;
+
+  const role = useAppSelector(({ company }) => company.customer.role);
 
   const isEnableProduct = useAppSelector(
     ({ global }) => global.blockPendingQuoteNonPurchasableOOS.isEnableProduct,
@@ -246,7 +249,7 @@ function QuoteDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>) {
                   textDecoration: 'line-through',
                 }}
               >
-                {showPrice(
+                {role === CustomerRole.GUEST ? '-' : showPrice(
                   currencyFormatConvert(price, {
                     currency,
                     isConversionRate: false,
@@ -263,7 +266,7 @@ function QuoteDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>) {
                 color: isDiscount ? '#2E7D32' : '#212121',
               }}
             >
-              {showPrice(
+              {role === CustomerRole.GUEST ? '-' : showPrice(
                 currencyFormatConvert(discountPrice, {
                   currency,
                   isConversionRate: false,
@@ -332,7 +335,7 @@ function QuoteDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>) {
                   textDecoration: 'line-through',
                 }}
               >
-                {showPrice(
+                {role === CustomerRole.GUEST ? '-' : showPrice(
                   currencyFormatConvert(total, {
                     currency,
                     isConversionRate: false,
@@ -348,7 +351,7 @@ function QuoteDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>) {
                 color: isDiscount ? '#2E7D32' : '#212121',
               }}
             >
-              {showPrice(
+              {role === CustomerRole.GUEST ? '-' : showPrice(
                 currencyFormatConvert(totalWithDiscount, {
                   currency,
                   isConversionRate: false,
