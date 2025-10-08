@@ -50,9 +50,11 @@ import {
 } from './context/ShoppingListDetailsContext';
 
 import { getShoppingListItemQuantities, setShoppingListItemQuantities } from '@/shared/service/vs/shoppingListQuantityService';
+import { getCustomFields } from '@/shared/service/bc/graphql/product';
 
 interface TableRefProps extends HTMLInputElement {
   initSearch: () => void;
+  reload: () => void;
 }
 
 interface UpdateShoppingListParamsProps {
@@ -256,9 +258,21 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
         });
 
         const newProductsSearch = await getProducts(productIds);
+        const customFields = await getCustomFields({productIds});
 
         listProducts.forEach((item) => {
           const { node } = item;
+
+          const customFieldList = customFields?.data?.site?.products?.edges?.find((field: CustomFieldItems) => {
+            const { node: { entityId } } = field;
+
+            return node.productId === entityId;
+          });
+          const uom = customFieldList?.node?.customFields?.edges?.find((field: CustomFieldItems) => {
+            const { node: { name } } = field;
+            
+            return name.localeCompare('Shipping Unit', 'en', { sensitivity: 'base' }) === 0;
+          });
 
           const productInfo = newProductsSearch.find((search: CustomFieldItems) => {
             const { id: productId } = search;
@@ -269,6 +283,7 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
           node.productsSearch = productInfo || {};
           node.productName = productInfo?.name || node.productName;
           node.productUrl = productInfo?.productUrl || node.productUrl;
+          node.uom = uom?.node?.value || '';
 
           node.disableCurrentCheckbox = false;
           if (node.quantity === 0) {
@@ -305,6 +320,8 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
 
   const handleResetQuantities = () => {
     setCheckedArr([]);
+    
+    tableRef.current?.reload();
   }
 
   const getShoppingListDetails = async (params: SearchProps) => {
@@ -571,6 +588,7 @@ function ShoppingListDetails({ setOpenPage }: PageProps) {
               shoppingListInfo={shoppingListInfo}
               allowJuniorPlaceOrder={allowJuniorPlaceOrder}
               checkedArr={checkedArr}
+              handleResetQuantities={handleResetQuantities}
               selectedSubTotal={calculateSubTotal(checkedArr)}
               setLoading={setIsRequestLoading}
               setDeleteOpen={setDeleteOpen}

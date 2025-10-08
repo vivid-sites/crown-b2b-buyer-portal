@@ -244,6 +244,7 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
 
   useImperativeHandle(ref, () => ({
     initSearch,
+    reload: () => paginationTableRef.current?.refresh(),
     getList: () => paginationTableRef.current?.getList(),
     setList: () => paginationTableRef.current?.setList(),
     getSelectedValue: () => paginationTableRef.current?.getSelectedValue(),
@@ -452,7 +453,6 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
   function handleResetQuantitiesInternal() {
     if(handleResetQuantities){
       handleResetQuantities();
-      paginationTableRef.current?.refresh();
     }
   }
 
@@ -506,9 +506,6 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
               >
                 {row.productName}
               </Typography>
-              <Typography variant="body1" color="#616161">
-                {row.variantSku}
-              </Typography>
               {optionList.length > 0 && optionsValue.length > 0 && (
                 <Box>
                   {optionsValue.map((option: any) => (
@@ -541,7 +538,41 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
           </Box>
         );
       },
-      width: '45%',
+      width: '40%',
+      isSortable: true,
+    },
+    {
+      key: 'Uom',
+      title: b3Lang('shoppingList.table.uom'),
+      render: (row: CustomFieldItems) => {
+        return (
+          <Typography
+            sx={{
+              padding: '12px 0',
+            }}
+          >
+            {row.uom}
+          </Typography>
+        );
+      },
+      width: '15%',
+      isSortable: false,
+    },
+    {
+      key: 'Sku',
+      title: b3Lang('shoppingList.table.sku'),
+      render: (row: CustomFieldItems) => {
+        return (
+          <Typography
+            sx={{
+              padding: '12px 0',
+            }}
+          >
+            {row.variantSku}
+          </Typography>
+        );
+      },
+      width: '15%',
       isSortable: true,
     },
     {

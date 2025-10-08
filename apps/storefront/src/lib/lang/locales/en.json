@@ -491,6 +491,8 @@
   "shoppingList.table.quantityUpdated": "Product quantity updated successfully",
   "shoppingList.table.productNotesUpdated": "Product notes updated successfully",
   "shoppingList.table.product": "Product",
+  "shoppingList.table.sku": "SKU",
+  "shoppingList.table.uom": "UOM",
   "shoppingList.table.price": "Price",
   "shoppingList.table.quantity": "Qty",
   "shoppingList.table.total": "Total",

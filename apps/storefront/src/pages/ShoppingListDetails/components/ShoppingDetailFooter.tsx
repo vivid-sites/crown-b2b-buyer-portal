@@ -33,6 +33,7 @@ interface ShoppingDetailFooterProps {
   shoppingListInfo: any;
   allowJuniorPlaceOrder: boolean;
   checkedArr: any;
+  handleResetQuantities: () => void;
   selectedSubTotal: number;
   setLoading: (val: boolean) => void;
   setDeleteOpen: (val: boolean) => void;
@@ -112,6 +113,7 @@ function ShoppingDetailFooter(props: ShoppingDetailFooterProps) {
     customColor,
     isCanEditShoppingList,
     role,
+    handleResetQuantities
   } = props;
 
   const b2bShoppingListActionsPermission = isB2BUser ? shoppingListCreateActionsPermission : true;
@@ -269,6 +271,7 @@ function ShoppingDetailFooter(props: ShoppingDetailFooterProps) {
 
       setValidateFailureProducts(validateFailureArr);
       setValidateSuccessProducts(validateSuccessArr);
+      handleResetQuantitiesInternal();
     } finally {
       setLoading(false);
     }
@@ -293,6 +296,12 @@ function ShoppingDetailFooter(props: ShoppingDetailFooterProps) {
 
     return option;
   };
+
+  function handleResetQuantitiesInternal() {
+    if(handleResetQuantities){
+      handleResetQuantities();
+    }
+  }
 
   const handleAddSelectedToQuote = async () => {
     if (checkedArr.length === 0) {
@@ -406,6 +415,8 @@ function ShoppingDetailFooter(props: ShoppingDetailFooterProps) {
       if (isSuccess) {
         await calculateProductListPrice(newProducts, '2');
         addQuoteDraftProducts(newProducts);
+        handleResetQuantitiesInternal();
+        
         snackbar.success(b3Lang('shoppingList.footer.productsAddedToQuote'), {
           action: {
             label: b3Lang('shoppingList.footer.viewQuote'),
