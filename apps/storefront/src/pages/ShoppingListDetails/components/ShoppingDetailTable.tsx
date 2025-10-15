@@ -346,17 +346,31 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
     await updateShoppingListItem(data);
   };
 
-  const handleUpdateShoppingListItemQty = async (itemId: number | string) => {
-    if (qtyNotChangeFlag) return;
-    setIsRequestLoading(true);
-    try {
-      await handleUpdateShoppingListItem(itemId);
-      snackbar.success(b3Lang('shoppingList.table.quantityUpdated'));
-      setQtyNotChangeFlag(true);
-      initSearch({ keepCheckedItems: true });
-    } finally {
-      setIsRequestLoading(false);
+  const handlePersistShoppingListItemQty = (itemId: number | string) => {
+    const listItems: ListItemProps[] = paginationTableRef.current?.getList() || [];
+    const currentItem = listItems.find((item: ListItemProps) => {
+      const { node } = item;
+
+      return node.itemId === itemId;
+    });
+    let currentNode;
+
+    if (currentItem) {
+      currentNode = currentItem.node;
     }
+
+    const quantity = currentNode?.quantity ? Number(currentNode.quantity) : 0;
+
+    // Update the quantity in sessionStorage
+    handleUpdateItemQuantity({ currentNode, quantity });
+  };
+
+  const handleUpdateShoppingListItemQty = (itemId: number | string) => {
+    if (qtyNotChangeFlag) return;
+
+    handlePersistShoppingListItemQty(itemId);
+    setQtyNotChangeFlag(true);
+    initSearch({ keepCheckedItems: true });
   };
 
   // const getSelectCheckbox = (selectCheckbox: Array<string | number>) => {
